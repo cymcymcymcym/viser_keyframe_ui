@@ -53,7 +53,9 @@ export default function GeneratedGuiContainer({
         setValue: setValue,
       }}
     >
-      <GuiContainer containerUuid={containerUuid} />
+      <Box className="viser-root-container">
+        <GuiContainer containerUuid={containerUuid} />
+      </Box>
     </GuiComponentContext.Provider>
   );
 }
@@ -92,7 +94,7 @@ function GuiContainer({ containerUuid }: { containerUuid: string }) {
     (a, b) => a.order - b.order,
   );
   const out = (
-    <Box pt="xs">
+    <Box pt="xs" className="viser-gui-container">
       {guiUuidOrderPairArray.map((pair, index) => (
         <GeneratedInput
           key={pair.uuid}

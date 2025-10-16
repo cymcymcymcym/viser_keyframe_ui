@@ -64,7 +64,7 @@ code {
  * Left column: operations, settings, visualization
  * Right column: joint sliders (spans full height)
  */
-.leva__root > div:first-child {
+.viser-gui-container {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   gap: 0.5em !important;
@@ -72,16 +72,16 @@ code {
 }
 
 /* First 5 folders go to left column */
-.leva__root > div:first-child > div:nth-child(1),
-.leva__root > div:first-child > div:nth-child(2),
-.leva__root > div:first-child > div:nth-child(3),
-.leva__root > div:first-child > div:nth-child(4),
-.leva__root > div:first-child > div:nth-child(5) {
+.viser-gui-container > div:nth-child(1),
+.viser-gui-container > div:nth-child(2),
+.viser-gui-container > div:nth-child(3),
+.viser-gui-container > div:nth-child(4),
+.viser-gui-container > div:nth-child(5) {
   grid-column: 1 !important;
 }
 
 /* Last folder (typically Joint Sliders) goes to right column and spans full height */
-.leva__root > div:first-child > div:nth-child(6) {
+.viser-gui-container > div:nth-child(6) {
   grid-column: 2 !important;
   grid-row: 1 / -1 !important;
 }
