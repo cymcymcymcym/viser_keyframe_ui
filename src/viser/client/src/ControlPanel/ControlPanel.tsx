@@ -67,7 +67,7 @@ export default function ControlPanel(props: {
       : controlWidthString == "medium"
       ? "20em"
       : controlWidthString == "large"
-      ? "60em"  // Widened for keyframe editor: 960px at default font size
+      ? "80em"  // Extra wide for keyframe editor: 1280px at default font size
       : null
   )!;
 

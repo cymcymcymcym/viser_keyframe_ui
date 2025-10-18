@@ -61,27 +61,67 @@ code {
 }
 
 /* Two-column layout for keyframe editor:
- * Left column: operations, settings, visualization
- * Right column: joint sliders (spans full height)
+ * Left column: Motion Name, Save Button, all folders except Joint Sliders
+ * Right column: Joint Sliders only
+ * Note: Using explicit row placement to prevent grid auto-flow conflicts
  */
 .viser-gui-container {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   gap: 0.5em !important;
   width: 100% !important;
+  align-items: start !important;
 }
 
-/* First 5 folders go to left column */
-.viser-gui-container > div:nth-child(1),
-.viser-gui-container > div:nth-child(2),
-.viser-gui-container > div:nth-child(3),
-.viser-gui-container > div:nth-child(4),
+/* First 9 elements go to left column, each in their own row */
+.viser-gui-container > div:nth-child(1) {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+
+.viser-gui-container > div:nth-child(2) {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+}
+
+.viser-gui-container > div:nth-child(3) {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.viser-gui-container > div:nth-child(4) {
+  grid-column: 1 !important;
+  grid-row: 4 !important;
+}
+
 .viser-gui-container > div:nth-child(5) {
   grid-column: 1 !important;
+  grid-row: 5 !important;
 }
 
-/* Last folder (typically Joint Sliders) goes to right column and spans full height */
 .viser-gui-container > div:nth-child(6) {
+  grid-column: 1 !important;
+  grid-row: 6 !important;
+}
+
+.viser-gui-container > div:nth-child(7) {
+  grid-column: 1 !important;
+  grid-row: 7 !important;
+}
+
+.viser-gui-container > div:nth-child(8) {
+  grid-column: 1 !important;
+  grid-row: 8 !important;
+}
+
+.viser-gui-container > div:nth-child(9) {
+  grid-column: 1 !important;
+  grid-row: 9 !important;
+}
+
+/* 10th element (Joint Sliders) goes to right column starting at row 1 */
+.viser-gui-container > div:nth-child(10) {
   grid-column: 2 !important;
-  grid-row: 1 / -1 !important;
+  grid-row: 1 / 10 !important;
+  align-self: start !important;
 }
