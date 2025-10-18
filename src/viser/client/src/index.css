@@ -67,10 +67,23 @@ code {
  */
 .viser-gui-container {
   display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 0.5em !important;
+  grid-template-columns: 3fr 2.5fr 2.5fr !important; /* Proportional: controls 37.5%, joints 31.25% each */
+  gap: 0.3em !important;
   width: 100% !important;
   align-items: start !important;
+}
+
+/* Make joint folders more compact */
+.viser-gui-container > div:nth-child(10),
+.viser-gui-container > div:nth-child(11) {
+  font-size: 0.9em !important;
+}
+
+.viser-gui-container > div:nth-child(10) > *,
+.viser-gui-container > div:nth-child(11) > * {
+  margin-bottom: 0.2em !important;
+  padding-top: 0.1em !important;
+  padding-bottom: 0.1em !important;
 }
 
 /* First 9 elements go to left column, each in their own row */
@@ -119,38 +132,53 @@ code {
   grid-row: 9 !important;
 }
 
-/* 10th element (Joint Sliders) goes to right column starting at row 1 */
+/* 10th element (Joints 1/2) goes in column 2 */
 .viser-gui-container > div:nth-child(10) {
   grid-column: 2 !important;
   grid-row: 1 / 10 !important;
   align-self: start !important;
 }
 
-/* Make ALL sliders shorter by targeting the slider input directly */
+/* 11th element (Joints 2/2) goes in column 3 */
+.viser-gui-container > div:nth-child(11) {
+  grid-column: 3 !important;
+  grid-row: 1 / 10 !important;
+  align-self: start !important;
+}
+
+/* Make sliders responsive and draggable */
+.viser-gui-container input[type="range"],
+.viser-gui-container * input[type="range"],
 input[type="range"] {
-  max-width: 180px !important;
-  width: 180px !important;
-}
-
-/* Force 2-column grid on the folder content - very aggressive selectors */
-.viser-gui-container > div:nth-child(10) * [class*="content"],
-.viser-gui-container > div:nth-child(10) * [class*="Content"],
-.viser-gui-container > div:nth-child(10) * [class*="panel"],
-.viser-gui-container > div:nth-child(10) * [class*="Panel"] {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  grid-auto-flow: dense !important;
-  gap: 0.3em 1em !important;
-  align-items: start !important;
-  column-gap: 1em !important;
-  row-gap: 0.3em !important;
-}
-
-/* Make sure each slider element takes up one grid cell */
-.viser-gui-container > div:nth-child(10) * [class*="content"] > *,
-.viser-gui-container > div:nth-child(10) * [class*="Content"] > *,
-.viser-gui-container > div:nth-child(10) * [class*="panel"] > *,
-.viser-gui-container > div:nth-child(10) * [class*="Panel"] > * {
+  min-width: 150px !important;
   width: 100% !important;
-  max-width: 100% !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+  flex-grow: 1 !important;
+}
+
+/* FORCE all elements inside joint folders to be vertical lists */
+.viser-gui-container > div:nth-child(10) *,
+.viser-gui-container > div:nth-child(11) * {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  grid-auto-flow: unset !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Exception: keep input elements as their default */
+.viser-gui-container > div:nth-child(10) input,
+.viser-gui-container > div:nth-child(11) input,
+.viser-gui-container > div:nth-child(10) button,
+.viser-gui-container > div:nth-child(11) button,
+.viser-gui-container > div:nth-child(10) label,
+.viser-gui-container > div:nth-child(11) label,
+.viser-gui-container > div:nth-child(10) span,
+.viser-gui-container > div:nth-child(11) span {
+  display: inline-flex !important;
+  flex-direction: row !important;
 }

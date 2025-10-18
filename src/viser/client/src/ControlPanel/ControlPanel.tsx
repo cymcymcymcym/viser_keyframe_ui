@@ -67,7 +67,7 @@ const controlWidth = (
     : controlWidthString == "medium"
     ? "20em"
     : controlWidthString == "large"
-    ? "110em"  // Extra wide for keyframe editor: 1760px at default font size
+    ? "65vw"  // Proportional width: 65% of viewport for keyframe editor
     : null
 )!;
 

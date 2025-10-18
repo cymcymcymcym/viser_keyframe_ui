@@ -24,14 +24,14 @@ export default function SliderComponent({
   if (!visible) return null;
   const updateValue = (value: number) => setValue(uuid, value);
   const input = (
-    <Flex justify="space-between">
+    <Flex direction="column" align="flex-start" gap={2} style={{ minWidth: "150px", width: "100%" }}>
       <Slider
         id={uuid}
         className={marks === null ? sliderDefaultMarks : undefined}
         size="xs"
         thumbSize={0}
         radius="xs"
-        style={{ flexGrow: 1 }}
+        style={{ width: "100%", minWidth: "150px" }}
         styles={(theme) => ({
           thumb: {
             height: "0.75rem",
@@ -51,8 +51,8 @@ export default function SliderComponent({
             transform: "scale(2)",
           },
         })}
-        pt="0.3em"
-        pb="0.2em"
+        pt="0.1em"
+        pb="0.1em"
         showLabelOnHover={false}
         min={min}
         max={max}
@@ -92,16 +92,16 @@ export default function SliderComponent({
         hideControls
         step={step ?? undefined}
         // precision={precision}
-        style={{ width: "3rem" }}
+        style={{ width: "4.5rem", marginTop: "0.2em" }}
         styles={{
           input: {
-            padding: "0.375em",
+            padding: "0.25em",
             letterSpacing: "-0.5px",
-            minHeight: "1.875em",
-            height: "1.875em",
+            minHeight: "1.5em",
+            height: "1.5em",
+            fontSize: "0.85em",
           },
         }}
-        ml="xs"
       />
     </Flex>
   );
