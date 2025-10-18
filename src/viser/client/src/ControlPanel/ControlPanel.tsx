@@ -61,15 +61,15 @@ export default function ControlPanel(props: {
   const controlWidthString = viewer.useGui(
     (state) => state.theme.control_width,
   );
-  const controlWidth = (
-    controlWidthString == "small"
-      ? "16em"
-      : controlWidthString == "medium"
-      ? "20em"
-      : controlWidthString == "large"
-      ? "80em"  // Extra wide for keyframe editor: 1280px at default font size
-      : null
-  )!;
+const controlWidth = (
+  controlWidthString == "small"
+    ? "16em"
+    : controlWidthString == "medium"
+    ? "20em"
+    : controlWidthString == "large"
+    ? "110em"  // Extra wide for keyframe editor: 1760px at default font size
+    : null
+)!;
 
   const generatedServerToggleButton = (
     <ActionIcon

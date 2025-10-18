@@ -125,3 +125,21 @@ code {
   grid-row: 1 / 10 !important;
   align-self: start !important;
 }
+
+/* Make Joint Sliders folder contents display in 2-column grid for left/right pairs */
+/* Target the Accordion panel content using wildcard for nested structure */
+.viser-gui-container > div:nth-child(10) [class*="AccordionPanel"] > div,
+.viser-gui-container > div:nth-child(10) [class*="Collapse"] > div,
+.viser-gui-container > div:nth-child(10) .mantine-Accordion-content > div,
+.viser-gui-container > div:nth-child(10) .mantine-Collapse-root > div {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0.5em 0.8em !important;
+  align-items: start !important;
+}
+
+/* Ensure each slider takes up one grid cell and doesn't overflow */
+.viser-gui-container > div:nth-child(10) [class*="GuiComponentContext"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
