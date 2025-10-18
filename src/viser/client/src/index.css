@@ -185,3 +185,72 @@ input[type="range"] {
   display: inline-flex !important;
   flex-direction: row !important;
 }
+
+/* COMPACT MODE: Reduce vertical spacing only (keep font sizes normal) */
+/* Reduce gap between grid columns */
+.viser-gui-container {
+  gap: 0.03em !important;
+}
+
+/* Reduce margins between folder items (joint sliders, buttons, etc.) */
+.viser-gui-container > div > div > div:last-child > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Keep folder header padding normal so text has breathing room */
+.viser-gui-container > div > div > div:first-child {
+  padding-top: 0.4em !important;
+  padding-bottom: 0.4em !important;
+}
+
+/* Reduce gap BETWEEN folders (from end of one folder to start of next) */
+.viser-gui-container > div {
+  margin-top: 0 !important;
+  margin-bottom: -0.5em !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Also reduce padding at the bottom of folder content areas */
+.viser-gui-container > div > div > div:last-child {
+  padding-bottom: 0.05em !important;
+}
+
+/* Arrange checkboxes in rows for Settings folder */
+/* Settings folder is 6th element - 4 checkboxes in 2 rows of 2 */
+.viser-gui-container > div:nth-child(6) > div > div:last-child {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.5em !important;
+  flex-wrap: wrap !important;
+}
+
+/* Make all 4 checkboxes take up 50% width each (2 per row) */
+.viser-gui-container > div:nth-child(6) > div > div:last-child > div:nth-child(1),
+.viser-gui-container > div:nth-child(6) > div > div:last-child > div:nth-child(2),
+.viser-gui-container > div:nth-child(6) > div > div:last-child > div:nth-child(3),
+.viser-gui-container > div:nth-child(6) > div > div:last-child > div:nth-child(4) {
+  width: calc(50% - 0.25em) !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+}
+
+/* Arrange checkboxes in rows for Visualization folder */
+/* Visualization folder is 7th element - make its checkboxes display in pairs */
+.viser-gui-container > div:nth-child(7) > div > div:last-child {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.5em !important;
+  flex-wrap: wrap !important;
+}
+
+/* Make both checkboxes (Show Collision Geoms, Show All Geoms) appear in same row */
+.viser-gui-container > div:nth-child(7) > div > div:last-child > div:nth-child(1),
+.viser-gui-container > div:nth-child(7) > div > div:last-child > div:nth-child(2) {
+  width: calc(50% - 0.25em) !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+}
