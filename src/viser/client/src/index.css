@@ -139,6 +139,7 @@ input[type="range"] {
 .viser-gui-container > div:nth-child(10) * [class*="Panel"] {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
+  grid-auto-flow: dense !important;
   gap: 0.3em 1em !important;
   align-items: start !important;
   column-gap: 1em !important;
