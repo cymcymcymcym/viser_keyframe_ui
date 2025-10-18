@@ -126,20 +126,30 @@ code {
   align-self: start !important;
 }
 
-/* Make Joint Sliders folder contents display in 2-column grid for left/right pairs */
-/* Target the Accordion panel content using wildcard for nested structure */
-.viser-gui-container > div:nth-child(10) [class*="AccordionPanel"] > div,
-.viser-gui-container > div:nth-child(10) [class*="Collapse"] > div,
-.viser-gui-container > div:nth-child(10) .mantine-Accordion-content > div,
-.viser-gui-container > div:nth-child(10) .mantine-Collapse-root > div {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 0.5em 0.8em !important;
-  align-items: start !important;
+/* Make ALL sliders shorter by targeting the slider input directly */
+input[type="range"] {
+  max-width: 180px !important;
+  width: 180px !important;
 }
 
-/* Ensure each slider takes up one grid cell and doesn't overflow */
-.viser-gui-container > div:nth-child(10) [class*="GuiComponentContext"] {
+/* Force 2-column grid on the folder content - very aggressive selectors */
+.viser-gui-container > div:nth-child(10) * [class*="content"],
+.viser-gui-container > div:nth-child(10) * [class*="Content"],
+.viser-gui-container > div:nth-child(10) * [class*="panel"],
+.viser-gui-container > div:nth-child(10) * [class*="Panel"] {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0.3em 1em !important;
+  align-items: start !important;
+  column-gap: 1em !important;
+  row-gap: 0.3em !important;
+}
+
+/* Make sure each slider element takes up one grid cell */
+.viser-gui-container > div:nth-child(10) * [class*="content"] > *,
+.viser-gui-container > div:nth-child(10) * [class*="Content"] > *,
+.viser-gui-container > div:nth-child(10) * [class*="panel"] > *,
+.viser-gui-container > div:nth-child(10) * [class*="Panel"] > * {
   width: 100% !important;
   max-width: 100% !important;
 }
