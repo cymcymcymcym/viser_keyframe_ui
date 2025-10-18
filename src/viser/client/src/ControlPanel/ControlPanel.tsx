@@ -67,7 +67,7 @@ const controlWidth = (
     : controlWidthString == "medium"
     ? "20em"
     : controlWidthString == "large"
-    ? "65vw"  // Proportional width: 65% of viewport for keyframe editor
+    ? "75vw"  // Responsive: 75% of viewport width, works on all screen sizes
     : null
 )!;
 
