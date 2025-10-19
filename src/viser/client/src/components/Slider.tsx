@@ -24,7 +24,7 @@ export default function SliderComponent({
   if (!visible) return null;
   const updateValue = (value: number) => setValue(uuid, value);
   const input = (
-    <Flex direction="column" align="flex-start" gap="0.08em" style={{ width: "100%", minWidth: "180px", maxWidth: "280px", marginBottom: "0.03em" }}>
+    <Flex direction="column" align="flex-start" gap="0.15em" style={{ width: "100%", minWidth: "180px", maxWidth: "280px", marginBottom: "0.03em" }}>
       <Slider
         id={uuid}
         className={marks === null ? sliderDefaultMarks : undefined}
@@ -92,7 +92,7 @@ export default function SliderComponent({
         hideControls
         step={step ?? undefined}
         // precision={precision}
-        style={{ width: "5rem", marginTop: "0.08em", marginBottom: "0.03em" }}
+        style={{ width: "5rem", marginTop: "0.15em", marginBottom: "0.03em" }}
         styles={{
           input: {
             padding: "0.375em",

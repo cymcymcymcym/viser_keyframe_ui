@@ -254,3 +254,35 @@ input[type="range"] {
   display: inline-flex !important;
   flex-direction: row !important;
 }
+
+/* Make Keyframe List and Sequence List scrollable with fixed height */
+/* Keyframe List is typically 8th element, Sequence is 4th or 5th element */
+/* Target the content area of these folders */
+.viser-gui-container > div:nth-child(4) > div > div:last-child,
+.viser-gui-container > div:nth-child(5) > div > div:last-child,
+.viser-gui-container > div:nth-child(8) > div > div:last-child,
+.viser-gui-container > div:nth-child(9) > div > div:last-child {
+  max-height: 150px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 0.3em !important;
+}
+
+/* Custom scrollbar styling for dark theme */
+.viser-gui-container > div > div > div:last-child::-webkit-scrollbar {
+  width: 8px;
+}
+
+.viser-gui-container > div > div > div:last-child::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.viser-gui-container > div > div > div:last-child::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.viser-gui-container > div > div > div:last-child::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
