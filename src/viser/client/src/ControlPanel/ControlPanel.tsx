@@ -67,7 +67,7 @@ const controlWidth = (
     : controlWidthString == "medium"
     ? "20em"
     : controlWidthString == "large"
-    ? "60vw"  // Responsive: 60% of viewport width (40% for 3D viewer, 60% for UI)
+    ? "70vw"  // Responsive: 70% of viewport width (30% for 3D viewer, 70% for UI)
     : null
 )!;
 

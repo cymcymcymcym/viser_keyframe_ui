@@ -67,8 +67,8 @@ code {
  */
 .viser-gui-container {
   display: grid !important;
-  grid-template-columns: 1.6fr 1fr 1fr !important; /* Proportional: controls 44%, joints 28% each (more balanced) */
-  gap: 0.4em !important;
+  grid-template-columns: 3fr 2fr 2fr !important; /* 30% control, 20% joint1, 20% joint2 of viewport (within 70vw sidebar) */
+  gap: 0.3em !important;
   width: 100% !important;
   align-items: start !important;
 }
@@ -119,18 +119,30 @@ code {
   grid-row: 9 !important;
 }
 
-/* 10th element (Joints 1/2) goes in column 2 */
 .viser-gui-container > div:nth-child(10) {
-  grid-column: 2 !important;
-  grid-row: 1 / 10 !important;
-  align-self: start !important;
+  grid-column: 1 !important;
+  grid-row: 10 !important;
 }
 
-/* 11th element (Joints 2/2) goes in column 3 */
 .viser-gui-container > div:nth-child(11) {
-  grid-column: 3 !important;
-  grid-row: 1 / 10 !important;
+  grid-column: 1 !important;
+  grid-row: 11 !important;
+}
+
+/* 12th element (Joints 1/2) goes in column 2 */
+.viser-gui-container > div:nth-child(12) {
+  grid-column: 2 !important;
+  grid-row: 1 / 12 !important;
   align-self: start !important;
+  min-width: 0 !important;
+}
+
+/* 13th element (Joints 2/2) goes in column 3 */
+.viser-gui-container > div:nth-child(13) {
+  grid-column: 3 !important;
+  grid-row: 1 / 12 !important;
+  align-self: start !important;
+  min-width: 0 !important;
 }
 
 /* Make ALL sliders fit in narrower joint columns */
@@ -146,8 +158,8 @@ input[type="range"] {
 }
 
 /* Force parent containers to NOT compress sliders */
-.viser-gui-container > div:nth-child(10) * > input[type="range"],
-.viser-gui-container > div:nth-child(11) * > input[type="range"] {
+.viser-gui-container > div:nth-child(12) * > input[type="range"],
+.viser-gui-container > div:nth-child(13) * > input[type="range"] {
   min-width: 150px !important;
   width: 150px !important;
   max-width: 150px !important;
@@ -157,15 +169,15 @@ input[type="range"] {
 }
 
 /* Make sure all slider CONTAINERS don't compress */
-.viser-gui-container > div:nth-child(10) *:has(> input[type="range"]),
-.viser-gui-container > div:nth-child(11) *:has(> input[type="range"]) {
+.viser-gui-container > div:nth-child(12) *:has(> input[type="range"]),
+.viser-gui-container > div:nth-child(13) *:has(> input[type="range"]) {
   min-width: 150px !important;
   flex-shrink: 0 !important;
 }
 
 /* FORCE all elements inside joint folders to be vertical lists */
-.viser-gui-container > div:nth-child(10) *,
-.viser-gui-container > div:nth-child(11) * {
+.viser-gui-container > div:nth-child(12) *,
+.viser-gui-container > div:nth-child(13) * {
   display: flex !important;
   flex-direction: column !important;
   grid-template-columns: none !important;
@@ -174,14 +186,14 @@ input[type="range"] {
 }
 
 /* Exception: keep input elements as their default */
-.viser-gui-container > div:nth-child(10) input,
-.viser-gui-container > div:nth-child(11) input,
-.viser-gui-container > div:nth-child(10) button,
-.viser-gui-container > div:nth-child(11) button,
-.viser-gui-container > div:nth-child(10) label,
-.viser-gui-container > div:nth-child(11) label,
-.viser-gui-container > div:nth-child(10) span,
-.viser-gui-container > div:nth-child(11) span {
+.viser-gui-container > div:nth-child(12) input,
+.viser-gui-container > div:nth-child(13) input,
+.viser-gui-container > div:nth-child(12) button,
+.viser-gui-container > div:nth-child(13) button,
+.viser-gui-container > div:nth-child(12) label,
+.viser-gui-container > div:nth-child(13) label,
+.viser-gui-container > div:nth-child(12) span,
+.viser-gui-container > div:nth-child(13) span {
   display: inline-flex !important;
   flex-direction: row !important;
 }
@@ -192,9 +204,9 @@ input[type="range"] {
   gap: 0.03em !important;
 }
 
-/* Reduce margins between folder items (joint sliders, buttons, etc.) */
+/* Add spacing between folder items (prevents overlap) */
 .viser-gui-container > div > div > div:last-child > * {
-  margin-top: 0 !important;
+  margin-top: 0.3em !important;
   margin-bottom: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
@@ -209,14 +221,14 @@ input[type="range"] {
 /* Reduce gap BETWEEN folders (from end of one folder to start of next) */
 .viser-gui-container > div {
   margin-top: 0 !important;
-  margin-bottom: -0.5em !important;
+  margin-bottom: -0.8em !important; /* More negative = folders closer together */
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
 
-/* Also reduce padding at the bottom of folder content areas */
+/* Increase padding at the bottom of folder content areas to prevent overlap with buttons */
 .viser-gui-container > div > div > div:last-child {
-  padding-bottom: 0.05em !important;
+  padding-bottom: 0.6em !important; /* More padding = bigger folder box, prevents button overlap */
 }
 
 /* Arrange buttons in rows for Keyframe Operations folder (3rd element) */
@@ -297,17 +309,15 @@ input[type="range"] {
   flex-direction: row !important;
 }
 
-/* Make Keyframe List and Sequence List scrollable with fixed height */
-/* Keyframe List is typically 8th element, Sequence is 4th or 5th element */
-/* Target the content area of these folders */
-.viser-gui-container > div:nth-child(4) > div > div:last-child,
-.viser-gui-container > div:nth-child(5) > div > div:last-child,
-.viser-gui-container > div:nth-child(8) > div > div:last-child,
-.viser-gui-container > div:nth-child(9) > div > div:last-child {
+/* Make "Keyframes List" (8th) and "Sequence List" (10th) folders scrollable */
+/* These are now separate folders containing only the list HTML */
+.viser-gui-container > div:nth-child(8) > div > div:last-child > *:first-child,
+.viser-gui-container > div:nth-child(10) > div > div:last-child > *:first-child {
   max-height: 150px !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   padding-right: 0.3em !important;
+  display: block !important;
 }
 
 /* Custom scrollbar styling for dark theme */
