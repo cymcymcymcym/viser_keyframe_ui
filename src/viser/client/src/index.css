@@ -67,8 +67,8 @@ code {
  */
 .viser-gui-container {
   display: grid !important;
-  grid-template-columns: 3fr 2.5fr 2.5fr !important; /* Proportional: controls 37.5%, joints 31.25% each */
-  gap: 0.5em !important;
+  grid-template-columns: 1.6fr 1fr 1fr !important; /* Proportional: controls 44%, joints 28% each (more balanced) */
+  gap: 0.4em !important;
   width: 100% !important;
   align-items: start !important;
 }
@@ -133,33 +133,33 @@ code {
   align-self: start !important;
 }
 
-/* Make ALL sliders longer and draggable - NUCLEAR specificity */
+/* Make ALL sliders fit in narrower joint columns */
 .viser-gui-container input[type="range"],
 .viser-gui-container * input[type="range"],
 input[type="range"] {
-  min-width: 250px !important;
-  width: 250px !important;
-  max-width: 250px !important;
+  min-width: 150px !important;
+  width: 150px !important;
+  max-width: 150px !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
-  flex-basis: 250px !important;
+  flex-basis: 150px !important;
 }
 
 /* Force parent containers to NOT compress sliders */
 .viser-gui-container > div:nth-child(10) * > input[type="range"],
 .viser-gui-container > div:nth-child(11) * > input[type="range"] {
-  min-width: 250px !important;
-  width: 250px !important;
-  max-width: 250px !important;
+  min-width: 150px !important;
+  width: 150px !important;
+  max-width: 150px !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
-  flex-basis: 250px !important;
+  flex-basis: 150px !important;
 }
 
 /* Make sure all slider CONTAINERS don't compress */
 .viser-gui-container > div:nth-child(10) *:has(> input[type="range"]),
 .viser-gui-container > div:nth-child(11) *:has(> input[type="range"]) {
-  min-width: 250px !important;
+  min-width: 150px !important;
   flex-shrink: 0 !important;
 }
 
@@ -217,6 +217,48 @@ input[type="range"] {
 /* Also reduce padding at the bottom of folder content areas */
 .viser-gui-container > div > div > div:last-child {
   padding-bottom: 0.05em !important;
+}
+
+/* Arrange buttons in rows for Keyframe Operations folder (3rd element) */
+.viser-gui-container > div:nth-child(3) > div > div:last-child {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.3em !important;
+  flex-wrap: wrap !important;
+}
+
+/* Make keyframe operation buttons wrap to fit in narrower space */
+.viser-gui-container > div:nth-child(3) > div > div:last-child > * {
+  flex: 1 1 calc(50% - 0.15em) !important;
+  min-width: 0 !important;
+}
+
+/* Arrange buttons in rows for Sequence folder (4th element) */
+.viser-gui-container > div:nth-child(4) > div > div:last-child {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.3em !important;
+  flex-wrap: wrap !important;
+}
+
+/* Make sequence buttons wrap to fit in narrower space */
+.viser-gui-container > div:nth-child(4) > div > div:last-child > * {
+  flex: 1 1 calc(50% - 0.15em) !important;
+  min-width: 0 !important;
+}
+
+/* Arrange buttons in rows for Foot Hand Poses folder (5th element) */
+.viser-gui-container > div:nth-child(5) > div > div:last-child {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.3em !important;
+  flex-wrap: wrap !important;
+}
+
+/* Make foot/hand pose buttons wrap to fit in narrower space */
+.viser-gui-container > div:nth-child(5) > div > div:last-child > * {
+  flex: 1 1 calc(50% - 0.15em) !important;
+  min-width: 0 !important;
 }
 
 /* Arrange checkboxes in rows for Settings folder */
