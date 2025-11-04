@@ -185,17 +185,23 @@ input[type="range"] {
   align-items: stretch !important;
 }
 
-/* Exception: keep input elements as their default */
-.viser-gui-container > div:nth-child(12) input,
-.viser-gui-container > div:nth-child(13) input,
+/* Exception: keep input elements and text labels as inline/row */
+.viser-gui-container > div:nth-child(12) input[type="range"],
+.viser-gui-container > div:nth-child(13) input[type="range"],
+.viser-gui-container > div:nth-child(12) input[type="number"],
+.viser-gui-container > div:nth-child(13) input[type="number"],
 .viser-gui-container > div:nth-child(12) button,
-.viser-gui-container > div:nth-child(13) button,
-.viser-gui-container > div:nth-child(12) label,
-.viser-gui-container > div:nth-child(13) label,
-.viser-gui-container > div:nth-child(12) span,
-.viser-gui-container > div:nth-child(13) span {
+.viser-gui-container > div:nth-child(13) button {
+  display: inline-block !important;
+  flex-direction: row !important;
+}
+
+/* Keep joint name labels as row layout (text only) */
+.viser-gui-container > div:nth-child(12) > div > div:last-child > div > label,
+.viser-gui-container > div:nth-child(13) > div > div:last-child > div > label {
   display: inline-flex !important;
   flex-direction: row !important;
+  width: 100% !important;
 }
 
 /* COMPACT MODE: Reduce vertical spacing only (keep font sizes normal) */

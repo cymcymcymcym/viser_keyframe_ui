@@ -24,14 +24,14 @@ export default function SliderComponent({
   if (!visible) return null;
   const updateValue = (value: number) => setValue(uuid, value);
   const input = (
-    <Flex direction="column" align="flex-start" gap="0.15em" style={{ width: "100%", minWidth: "130px", maxWidth: "200px", marginBottom: "0.03em" }}>
+    <Flex direction="column" align="flex-start" gap="0" style={{ width: "100%", minWidth: "130px", maxWidth: "200px", marginBottom: "0.03em" }}>
       <Slider
         id={uuid}
         className={marks === null ? sliderDefaultMarks : undefined}
         size="xs"
         thumbSize={0}
         radius="xs"
-        style={{ width: "100%", minWidth: "130px" }}
+        style={{ width: "100%", minWidth: "130px", marginTop: "-0.2em" }}
         styles={(theme) => ({
           thumb: {
             height: "0.75rem",
@@ -51,7 +51,7 @@ export default function SliderComponent({
             transform: "scale(2)",
           },
         })}
-        pt="0.1em"
+        pt="0"
         pb="0.03em"
         showLabelOnHover={false}
         min={min}
@@ -67,13 +67,13 @@ export default function SliderComponent({
                   value: min,
                   // The regex here removes trailing zeros and the decimal
                   // point if the number is an integer.
-                  label: `${min.toFixed(6).replace(/\.?0+$/, "")}`,
+                  label: `${min.toFixed(1).replace(/\.?0+$/, "")}`,
                 },
                 {
                   value: max,
                   // The regex here removes trailing zeros and the decimal
                   // point if the number is an integer.
-                  label: `${max.toFixed(6).replace(/\.?0+$/, "")}`,
+                  label: `${max.toFixed(1).replace(/\.?0+$/, "")}`,
                 },
               ]
             : marks
@@ -92,7 +92,7 @@ export default function SliderComponent({
         hideControls
         step={step ?? undefined}
         // precision={precision}
-        style={{ width: "4rem", marginTop: "0.15em", marginBottom: "0.03em" }}
+        style={{ width: "4rem", marginTop: "0.35em", marginBottom: "0.03em" }}
         styles={{
           input: {
             padding: "0.375em",
