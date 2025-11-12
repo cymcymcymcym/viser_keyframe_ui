@@ -9,7 +9,7 @@ import { Notifications } from "@mantine/notifications";
 import { Environment, PerformanceMonitor, Stats } from "@react-three/drei";
 import * as THREE from "three";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { ViewerMutable } from "./ViewerContext";
 import {
   Anchor,
@@ -49,6 +49,8 @@ import { BrowserWarning } from "./BrowserWarning";
 import { MacWindowWrapper } from "./MacWindowWrapper";
 import { CsmDirectionalLight } from "./CsmDirectionalLight";
 import { VISER_VERSION, GITHUB_CONTRIBUTORS, Contributor } from "./VersionInfo";
+
+const MIN_CANVAS_RATIO = 0.3;
 
 // ======= Utility functions =======
 
@@ -277,15 +279,24 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
   );
   const canvases = useMemo(
     () => (
-      <>
-        <Viewer2DCanvas />
-        <ViewerCanvas>
-          <FrameSynchronizedMessageHandler />
-        </ViewerCanvas>
-      </>
+      <ViewerCanvas>
+        <FrameSynchronizedMessageHandler />
+      </ViewerCanvas>
     ),
     [],
   );
+  const [panelMetrics, setPanelMetrics] = React.useState<{
+    widthPx: number;
+    ratio: number;
+  }>({ widthPx: 320, ratio: 0.3 });
+  const handlePanelMetricsChange = React.useCallback(
+    (metrics: { widthPx: number; ratio: number }) => {
+      setPanelMetrics(metrics);
+    },
+    [],
+  );
+  const isFloatingLayout = controlLayout === "floating";
+  const effectivePanelWidthPx = isFloatingLayout ? 0 : panelMetrics.widthPx;
   return (
     <>
       <MantineProvider
@@ -318,27 +329,80 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
         >
           <Titlebar />
           <Box
-            style={{
-              width: "100%",
-              position: "relative",
-              flexGrow: 1,
-              overflow: "hidden",
-              display: "flex",
-            }}
+            style={
+              isFloatingLayout
+                ? {
+                    width: "100%",
+                    position: "relative",
+                    flexGrow: 1,
+                    overflow: "hidden",
+                    display: "flex",
+                  }
+                : {
+                    width: "100%",
+                    position: "relative",
+                    flexGrow: 1,
+                    overflow: "hidden",
+                    display: "grid",
+                    gridTemplateColumns: (() => {
+                      const panelRatio = Math.min(
+                        Math.max(panelMetrics.ratio, 0),
+                        1 - MIN_CANVAS_RATIO,
+                      );
+                      const canvasRatio = Math.max(
+                        MIN_CANVAS_RATIO,
+                        1 - panelRatio,
+                      );
+                      const total = canvasRatio + panelRatio || 1;
+                      const canvasFr = canvasRatio / total;
+                      const panelFr =
+                        panelRatio > 0 ? panelRatio / total : 0.0001;
+                      return `${canvasFr}fr ${panelFr}fr`;
+                    })(),
+                    alignItems: "stretch",
+                    columnGap: "0px",
+                  }
+            }
           >
             <Box
               style={(theme) => ({
                 backgroundColor: darkMode ? theme.colors.dark[9] : "#fff",
-                flexGrow: 1,
                 overflow: "hidden",
                 height: "100%",
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                ...(isFloatingLayout
+                  ? { flexGrow: 1, minWidth: 0 }
+                  : { gridColumn: "1 / span 1", width: "100%" }),
               })}
             >
               {canvases}
               {showLogo && messageSource === "websocket" && <ViserLogo />}
             </Box>
             {messageSource === "websocket" && (
-              <ControlPanel control_layout={controlLayout} />
+              isFloatingLayout ? (
+                <ControlPanel
+                  control_layout={controlLayout}
+                  minCanvasRatio={MIN_CANVAS_RATIO}
+                />
+              ) : (
+                <Box
+                  style={{
+                    gridColumn: "2 / span 1",
+                    width: "100%",
+                    minWidth: 0,
+                    display: "flex",
+                    justifyContent: "stretch",
+                  }}
+                >
+                  <ControlPanel
+                    control_layout={controlLayout}
+                    onLayoutMetricsChange={handlePanelMetricsChange}
+                    minCanvasRatio={MIN_CANVAS_RATIO}
+                  />
+                </Box>
+              )
             )}
           </Box>
         </Box>
@@ -391,12 +455,30 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
   const sendClickThrottled = useThrottledMessageSender(20).send;
   const theme = useMantineTheme();
   const { ref: inViewRef, inView } = useInView();
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Memoize camera controls to prevent unnecessary re-creation.
   const memoizedCameraControls = useMemo(
     () => <SynchronizedCameraControls />,
     [],
   );
+
+  useEffect(() => {
+    const overlayCanvas = overlayCanvasRef.current;
+    const container = overlayCanvas?.parentElement;
+    if (!overlayCanvas || !container) {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      overlayCanvas.width = width;
+      overlayCanvas.height = height;
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // Handle pointer down event. I don't think we need useCallback here, since
   // remounts should be very rare.
@@ -507,6 +589,19 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
       ref={inViewRef}
       style={{ position: "relative", zIndex: 0, width: "100%", height: "100%" }}
     >
+      <canvas
+        ref={(el) => {
+          overlayCanvasRef.current = el;
+          viewer.mutable.current.canvas2d = el;
+        }}
+        style={{
+          position: "absolute",
+          zIndex: 1,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+        }}
+      />
       <Canvas
         camera={{ position: [-3.0, 3.0, -3.0], near: 0.01, far: 1000.0 }}
         gl={{ preserveDrawingBuffer: true }}
@@ -708,40 +803,6 @@ function AdaptiveDpr() {
           `[Performance] Setting DPR to ${dpr}; FPS=${fps}/${refreshrate}`,
         );
         setDpr(dpr);
-      }}
-    />
-  );
-}
-
-/**
- * 2D canvas overlay for drawing selection rectangles.
- */
-function Viewer2DCanvas() {
-  const viewer = React.useContext(ViewerContext)!;
-
-  useEffect(() => {
-    const canvas = viewer.mutable.current.canvas2d!;
-
-    // Create a resize observer to update canvas dimensions.
-    const resizeObserver = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      canvas.width = width;
-      canvas.height = height;
-    });
-
-    resizeObserver.observe(canvas);
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  return (
-    <canvas
-      ref={(el) => (viewer.mutable.current.canvas2d = el)}
-      style={{
-        position: "absolute",
-        zIndex: 1,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
       }}
     />
   );

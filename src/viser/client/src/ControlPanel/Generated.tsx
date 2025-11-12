@@ -26,6 +26,7 @@ import UploadButtonComponent from "../components/UploadButton";
 import ProgressBarComponent from "../components/ProgressBar";
 import ImageComponent from "../components/Image";
 import HtmlComponent from "../components/Html";
+import ColumnsComponent from "../components/Columns";
 
 /** Root of generated inputs. */
 export default function GeneratedGuiContainer({
@@ -123,6 +124,8 @@ function GeneratedInput(props: {
       return <FolderComponent {...conf} nextGuiUuid={props.nextGuiUuid} />;
     case "GuiTabGroupMessage":
       return <TabGroupComponent {...conf} />;
+    case "GuiColumnsMessage":
+      return <ColumnsComponent {...conf} />;
     case "GuiMarkdownMessage":
       return <MarkdownComponent {...conf} />;
     case "GuiHtmlMessage":

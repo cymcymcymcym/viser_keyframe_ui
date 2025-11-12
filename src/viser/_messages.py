@@ -1295,6 +1295,24 @@ class GuiTabGroupMessage(_CreateGuiComponentMessage):
 
 
 @dataclasses.dataclass
+class GuiColumnsProps:
+    order: float
+    """Order value for arranging GUI elements. """
+    visible: bool
+    """Visibility state of the columns group."""
+    column_widths: Optional[Tuple[float, ...]]
+    """Optional fractional widths for each column."""
+    _column_container_ids: Tuple[str, ...]
+    """(Private) Tuple of container IDs for each column."""
+
+
+@dataclasses.dataclass
+class GuiColumnsMessage(_CreateGuiComponentMessage):
+    container_uuid: str
+    props: GuiColumnsProps
+
+
+@dataclasses.dataclass
 class GuiModalMessage(Message):
     order: float
     uuid: str

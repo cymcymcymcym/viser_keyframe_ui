@@ -38,6 +38,7 @@ from ._gui_handles import (
     GuiButtonGroupHandle,
     GuiButtonHandle,
     GuiCheckboxHandle,
+    GuiColumnsHandle,
     GuiContainerProtocol,
     GuiDropdownHandle,
     GuiEvent,
@@ -596,6 +597,76 @@ class GuiApi:
                 parent_container_id=message.container_uuid,
             )
         )
+
+    @deprecated_positional_shim
+    def add_columns(
+        self,
+        num_columns: int,
+        *,
+        order: float | None = None,
+        widths: Sequence[float] | None = None,
+        visible: bool = True,
+    ) -> GuiColumnsHandle:
+        """Add a multi-column container for organizing GUI inputs side-by-side.
+
+        Args:
+            num_columns: Number of columns to create. Must be a positive integer.
+            order: Optional ordering value for the container.
+            widths: Optional sequence of positive numbers indicating relative column
+                widths. Values are interpreted as ratios of the available panel width
+                (e.g., ``(0.3, 0.2, 0.2)`` → 30%, 20%, 20% of the control panel) and are
+                normalized automatically. If omitted, columns share equal width.
+            visible: Whether the container should be shown initially.
+        """
+
+        if num_columns <= 0:
+            raise ValueError("num_columns must be a positive integer.")
+
+        parent_uuid = self._get_container_uuid()
+        container_uuid = _make_uuid()
+        column_ids = tuple(_make_uuid() for _ in range(num_columns))
+        order_value = _apply_default_order(order)
+
+        normalized_widths: tuple[float, ...] | None
+        if widths is None:
+            normalized_widths = None
+        else:
+            if len(widths) != num_columns:
+                raise ValueError(
+                    "Length of widths must match the number of columns."
+                )
+            widths_tuple = tuple(float(w) for w in widths)
+            if any(w < 0 for w in widths_tuple):
+                raise ValueError("Column widths must be non-negative.")
+            normalized_widths = widths_tuple
+
+        props = _messages.GuiColumnsProps(
+            order=order_value,
+            visible=visible,
+            column_widths=normalized_widths,
+            _column_container_ids=column_ids,
+        )
+
+        self._websock_interface.queue_message(
+            _messages.GuiColumnsMessage(
+                uuid=container_uuid,
+                container_uuid=parent_uuid,
+                props=props,
+            )
+        )
+
+        handle = GuiColumnsHandle(
+            _GuiHandleState(
+                container_uuid,
+                self,
+                None,
+                props=props,
+                parent_container_id=parent_uuid,
+            ),
+            column_container_ids=column_ids,
+        )
+
+        return handle
 
     @deprecated_positional_shim
     def add_markdown(

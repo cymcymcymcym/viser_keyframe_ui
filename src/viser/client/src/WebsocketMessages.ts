@@ -785,6 +785,21 @@ export interface GuiTabGroupMessage {
     visible: boolean;
   };
 }
+/** GuiColumnsMessage(uuid: 'str', container_uuid: 'str', props: 'GuiColumnsProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiColumnsMessage {
+  type: "GuiColumnsMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    visible: boolean;
+    column_widths: number[] | null;
+    _column_container_ids: string[];
+  };
+}
 /** GuiButtonMessage(uuid: 'str', value: 'bool', container_uuid: 'str', props: 'GuiButtonProps')
  *
  * (automatically generated)
@@ -1594,6 +1609,7 @@ export type Message =
   | GuiUplotMessage
   | GuiImageMessage
   | GuiTabGroupMessage
+  | GuiColumnsMessage
   | GuiButtonMessage
   | GuiUploadButtonMessage
   | GuiSliderMessage
@@ -1686,6 +1702,7 @@ export type GuiComponentMessage =
   | GuiUplotMessage
   | GuiImageMessage
   | GuiTabGroupMessage
+  | GuiColumnsMessage
   | GuiButtonMessage
   | GuiUploadButtonMessage
   | GuiSliderMessage
@@ -1742,6 +1759,7 @@ const typeSetGuiComponentMessage = new Set([
   "GuiUplotMessage",
   "GuiImageMessage",
   "GuiTabGroupMessage",
+  "GuiColumnsMessage",
   "GuiButtonMessage",
   "GuiUploadButtonMessage",
   "GuiSliderMessage",

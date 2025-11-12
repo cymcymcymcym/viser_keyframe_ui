@@ -23,12 +23,15 @@ export default function SidebarPanel({
   children,
   collapsible,
   width,
+  inline = false,
 }: {
   children: string | React.ReactNode;
   collapsible: boolean;
   width: string;
+  inline?: boolean;
 }) {
   const [collapsed, { toggle: toggleCollapsed }] = useDisclosure(false);
+  const colorScheme = useMantineColorScheme();
 
   const collapsedView = (
     <Box
@@ -61,6 +64,42 @@ export default function SidebarPanel({
       </ActionIcon>
     </Box>
   );
+
+  if (inline) {
+    return (
+      <SidebarPanelContext.Provider
+        value={{
+          collapsible: collapsible,
+          toggleCollapsed: toggleCollapsed,
+        }}
+      >
+        {collapsedView}
+        <Box
+          style={(theme) => ({
+            width: collapsed ? 0 : "100%",
+            maxWidth: width,
+            transition: "max-width 0.5s 0s, width 0.5s 0s",
+            boxSizing: "border-box",
+            overflow: "hidden",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            borderLeft: `1px solid ${
+              colorScheme.colorScheme === "dark"
+                ? theme.colors.dark[5]
+                : theme.colors.gray[3]
+            }`,
+            backgroundColor:
+              colorScheme.colorScheme === "dark"
+                ? theme.colors.dark[6]
+                : theme.white,
+          })}
+        >
+          {children}
+        </Box>
+      </SidebarPanelContext.Provider>
+    );
+  }
 
   return (
     <SidebarPanelContext.Provider
