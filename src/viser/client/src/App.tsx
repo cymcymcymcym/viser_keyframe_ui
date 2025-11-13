@@ -53,8 +53,18 @@ import { BrowserWarning } from "./BrowserWarning";
 import { MacWindowWrapper } from "./MacWindowWrapper";
 import { CsmDirectionalLight } from "./CsmDirectionalLight";
 import { VISER_VERSION, GITHUB_CONTRIBUTORS, Contributor } from "./VersionInfo";
+import {
+  CANVAS_MIN_SHRINK_RATIO,
+  COLUMN_GAP_PX,
+  DEFAULT_CANVAS_RATIO,
+  DEFAULT_FIRST_COLUMN_WIDTH_PX,
+  DEFAULT_JOINT_COLUMN_WIDTH_PX,
+  FIRST_COLUMN_MIN_RATIO,
+  JOINT_COLUMN_MIN_WIDTH_PX,
+  MIN_CANVAS_RATIO,
+  DEFAULT_JOINT_COLUMN_COUNT,
+} from "./layoutConstants";
 
-const MIN_CANVAS_RATIO = 0.3;
 const DEFAULT_ROOT_SCALE = 1;
 
 // ======= Utility functions =======
@@ -326,29 +336,15 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
     ),
     [],
   );
-  const forcedPanelRatio = 1 - MIN_CANVAS_RATIO;
   const defaultViewportWidth = React.useMemo(
     () => (typeof window !== "undefined" ? window.innerWidth : 1280),
-    [],
-  );
-  const [panelMetrics, setPanelMetrics] = React.useState<{
-    widthPx: number;
-    ratio: number;
-  }>(() => ({
-    widthPx: Math.round(defaultViewportWidth * forcedPanelRatio),
-    ratio: forcedPanelRatio,
-  }));
-  const handlePanelMetricsChange = React.useCallback(
-    (metrics: { widthPx: number; ratio: number }) => {
-      setPanelMetrics(metrics);
-    },
     [],
   );
   const isFloatingLayout = controlLayout === "floating";
   const [viewportWidth, setViewportWidth] = React.useState(() =>
     typeof window !== "undefined"
       ? window.innerWidth
-      : panelMetrics.widthPx / Math.max(panelMetrics.ratio || forcedPanelRatio, 0.001),
+      : defaultViewportWidth,
   );
   React.useEffect(() => {
     if (typeof window === "undefined") {
@@ -365,21 +361,151 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
     ? Math.max(viewportWidth, 1)
     : 1280;
 
-  let panelWidthPx = Math.min(
-    Math.max(0, panelMetrics.widthPx),
-    clampedViewportWidth * forcedPanelRatio,
-  );
-  let canvasWidthPx = Math.max(
-    clampedViewportWidth - panelWidthPx,
-    clampedViewportWidth * MIN_CANVAS_RATIO,
-  );
-  if (canvasWidthPx + panelWidthPx > clampedViewportWidth) {
-    canvasWidthPx = Math.max(
-      clampedViewportWidth * MIN_CANVAS_RATIO,
-      clampedViewportWidth - panelWidthPx,
+  const layoutMetrics = React.useMemo(() => {
+    if (clampedViewportWidth <= 0) {
+      return {
+        panelWidthPx: 0,
+        canvasWidthPx: 0,
+        panelRatio: 0,
+      };
+    }
+
+    const columnCount = DEFAULT_JOINT_COLUMN_COUNT + 1;
+    const jointCount = Math.max(columnCount - 1, 0);
+    const gapTotal = COLUMN_GAP_PX * Math.max(columnCount - 1, 0);
+
+    const defaultCanvasWidth = DEFAULT_CANVAS_RATIO * clampedViewportWidth;
+    const defaultPanelWidth = Math.max(0, clampedViewportWidth - defaultCanvasWidth);
+
+    const basePanelWithoutGaps =
+      DEFAULT_FIRST_COLUMN_WIDTH_PX +
+      jointCount * DEFAULT_JOINT_COLUMN_WIDTH_PX;
+    const basePanelWidth = basePanelWithoutGaps + gapTotal;
+    const scale = basePanelWidth > 0 ? defaultPanelWidth / basePanelWidth : 1;
+
+    let firstWidth = DEFAULT_FIRST_COLUMN_WIDTH_PX * scale;
+    const jointWidths = Array.from({ length: jointCount }, () => ({
+      value: DEFAULT_JOINT_COLUMN_WIDTH_PX * scale,
+    }));
+    let canvasWidth = defaultCanvasWidth;
+
+    const firstMin = firstWidth * FIRST_COLUMN_MIN_RATIO;
+    const jointMins = jointWidths.map((joint) =>
+      Math.min(joint.value, JOINT_COLUMN_MIN_WIDTH_PX),
     );
-    panelWidthPx = Math.max(0, clampedViewportWidth - canvasWidthPx);
-  }
+    const canvasMin = Math.min(
+      clampedViewportWidth,
+      Math.max(canvasWidth * CANVAS_MIN_SHRINK_RATIO, 0),
+    );
+
+    const sumJoint = jointWidths.reduce((acc, joint) => acc + joint.value, 0);
+    const minTotalWidth =
+      Math.max(firstMin, 0) +
+      jointMins.reduce((acc, min) => acc + Math.max(min, 0), 0) +
+      gapTotal +
+      canvasMin;
+
+    if (minTotalWidth >= clampedViewportWidth) {
+      const constrainedCanvas = Math.max(
+        0,
+        Math.min(canvasMin, clampedViewportWidth),
+      );
+      const panelWidth = Math.max(0, clampedViewportWidth - constrainedCanvas);
+      const panelRatio =
+        clampedViewportWidth > 0 ? panelWidth / clampedViewportWidth : 0;
+      return {
+        panelWidthPx: panelWidth,
+        canvasWidthPx: constrainedCanvas,
+        panelRatio,
+      };
+    }
+
+    let panelWidthCandidate = firstWidth + sumJoint + gapTotal;
+    let deficit =
+      panelWidthCandidate + canvasWidth - clampedViewportWidth;
+
+    if (deficit > 0) {
+      const canvasShrinkCapacity = Math.max(canvasWidth - canvasMin, 0);
+      const canvasShrink = Math.min(deficit, canvasShrinkCapacity);
+      if (canvasShrink > 0) {
+        canvasWidth -= canvasShrink;
+        deficit -= canvasShrink;
+      }
+    }
+
+    if (deficit > 0 && jointCount > 0) {
+      const jointCapacity = jointWidths.reduce(
+        (acc, joint, idx) =>
+          acc + Math.max(joint.value - jointMins[idx], 0),
+        0,
+      );
+      const jointShrink = Math.min(deficit, jointCapacity);
+      if (jointShrink > 0) {
+        let remaining = jointShrink;
+        let jointsRemaining = jointCount;
+        for (let idx = 0; idx < jointCount; idx += 1) {
+          if (remaining <= 0) {
+            break;
+          }
+          const minWidth = jointMins[idx];
+          const current = jointWidths[idx].value;
+          const available = Math.max(current - minWidth, 0);
+          const share = Math.min(
+            available,
+            remaining / Math.max(jointsRemaining, 1),
+          );
+          jointWidths[idx].value = current - share;
+          remaining -= share;
+          jointsRemaining -= 1;
+        }
+        deficit -= jointShrink;
+      }
+    }
+
+    if (deficit > 0) {
+      const firstShrinkCapacity = Math.max(firstWidth - firstMin, 0);
+      const firstShrink = Math.min(deficit, firstShrinkCapacity);
+      if (firstShrink > 0) {
+        firstWidth -= firstShrink;
+        deficit -= firstShrink;
+      }
+    }
+
+    const adjustedJointSum = jointWidths.reduce(
+      (acc, joint) => acc + joint.value,
+      0,
+    );
+    panelWidthCandidate = firstWidth + adjustedJointSum + gapTotal;
+
+    let canvasWidthPx = clampedViewportWidth - panelWidthCandidate;
+    if (canvasWidthPx < canvasMin) {
+      canvasWidthPx = Math.max(0, canvasMin);
+      panelWidthCandidate = Math.max(
+        0,
+        clampedViewportWidth - canvasWidthPx,
+      );
+    } else {
+      canvasWidthPx = Math.max(canvasWidthPx, 0);
+    }
+
+    const panelWidthPx = Math.max(
+      0,
+      Math.min(panelWidthCandidate, clampedViewportWidth),
+    );
+    const panelRatio =
+      clampedViewportWidth > 0 ? panelWidthPx / clampedViewportWidth : 0;
+
+    return {
+      panelWidthPx,
+      canvasWidthPx,
+      panelRatio,
+    };
+  }, [clampedViewportWidth]);
+
+  const panelWidthPx = layoutMetrics.panelWidthPx;
+  const canvasWidthPx = layoutMetrics.canvasWidthPx;
+  const forcedPanelRatio = layoutMetrics.panelRatio;
+
   const panelWidthPxString = `${Math.round(panelWidthPx)}px`;
   const canvasWidthPxString = `${Math.round(canvasWidthPx)}px`;
   return (
@@ -475,7 +601,6 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
                 >
                   <ControlPanel
                     control_layout={controlLayout}
-                    onLayoutMetricsChange={handlePanelMetricsChange}
                     minCanvasRatio={MIN_CANVAS_RATIO}
                     forcedPanelRatio={forcedPanelRatio}
                   />
