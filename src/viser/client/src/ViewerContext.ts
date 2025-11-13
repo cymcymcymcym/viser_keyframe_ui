@@ -10,6 +10,7 @@ import { UseSceneTree } from "./SceneTree";
 
 import { UseGui } from "./ControlPanel/GuiState";
 import { GetRenderRequestMessage, Message } from "./WebsocketMessages";
+import { ViewportMetrics } from "./ViewportLayoutContext";
 
 // Type definitions for all mutable state.
 export type ViewerMutable = {
@@ -25,6 +26,7 @@ export type ViewerMutable = {
   camera: THREE.PerspectiveCamera | null;
   backgroundMaterial: THREE.ShaderMaterial | null;
   cameraControl: CameraControls | null;
+  viewportMetrics: ViewportMetrics;
 
   // Scene management.
   nodeRefFromName: {

@@ -53,10 +53,12 @@ export default function ControlPanel({
   control_layout,
   onLayoutMetricsChange,
   minCanvasRatio = 0.3,
+  forcedPanelRatio,
 }: {
   control_layout: ThemeConfigurationMessage["control_layout"];
   onLayoutMetricsChange?: (metrics: PanelMetrics) => void;
   minCanvasRatio?: number;
+  forcedPanelRatio?: number;
 }) {
   const theme = useMantineTheme();
   const useMobileView = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
@@ -145,10 +147,17 @@ export default function ControlPanel({
     viewportWidth * (1 - minCanvasRatio),
   );
 
-  const computedPanelWidthPx = Math.max(
+  let computedPanelWidthPx = Math.max(
     0,
     Math.min(availableViewportWidth, desiredWidthPx, maxPanelWidthByCanvas),
   );
+  if (forcedPanelRatio !== undefined && viewportWidth > 0) {
+    const clampedRatio = Math.max(
+      0,
+      Math.min(1 - minCanvasRatio, forcedPanelRatio),
+    );
+    computedPanelWidthPx = clampedRatio * viewportWidth;
+  }
   const computedPanelWidth = `${computedPanelWidthPx}px`;
 
   React.useEffect(() => {
