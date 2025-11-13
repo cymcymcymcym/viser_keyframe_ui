@@ -55,6 +55,7 @@ import { CsmDirectionalLight } from "./CsmDirectionalLight";
 import { VISER_VERSION, GITHUB_CONTRIBUTORS, Contributor } from "./VersionInfo";
 
 const MIN_CANVAS_RATIO = 0.3;
+const DEFAULT_ROOT_SCALE = 1;
 
 // ======= Utility functions =======
 
@@ -121,6 +122,34 @@ const DisableRender = (): null => useFrame(() => null, 1000);
  * Root application component - handles dummy window wrapper if needed.
  */
 export function Root() {
+  useEffect(() => {
+    const rootElement = document.getElementById("root");
+    if (!rootElement) {
+      return;
+    }
+
+    const previousTransform = rootElement.style.transform;
+    const previousTransformOrigin = rootElement.style.transformOrigin;
+    const previousWidth = rootElement.style.width;
+
+    const scale = DEFAULT_ROOT_SCALE;
+    const expandedWidthPercent = `${(1 / scale) * 100}%`;
+
+    rootElement.style.transform = `scale(${scale})`;
+    rootElement.style.transformOrigin = "top left";
+    if (!previousWidth || previousWidth === "") {
+      rootElement.style.width = expandedWidthPercent;
+    } else {
+      rootElement.style.width = expandedWidthPercent;
+    }
+
+    return () => {
+      rootElement.style.transform = previousTransform;
+      rootElement.style.transformOrigin = previousTransformOrigin;
+      rootElement.style.width = previousWidth;
+    };
+  }, []);
+
   const searchParams = new URLSearchParams(window.location.search);
   const dummyWindowParam = searchParams.get("dummyWindowDimensions");
   const dummyWindowTitle =
