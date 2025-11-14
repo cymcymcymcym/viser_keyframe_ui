@@ -47,12 +47,14 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
   const totalGapWidth = COLUMN_GAP_PX * Math.max(columnIds.length - 1, 0);
   const firstColumnMinWidthPx =
     DEFAULT_FIRST_COLUMN_WIDTH_PX * FIRST_COLUMN_MIN_RATIO;
-  const inlineThreshold =
+  const minPanelWidthPx =
     (columnCount > 0 ? firstColumnMinWidthPx : 0) +
     jointColumnCount * JOINT_COLUMN_MIN_WIDTH_PX +
     totalGapWidth;
+  const COLLAPSE_TOLERANCE_PX = 6;
   const shouldCollapse =
-    availableWidth !== undefined && availableWidth < inlineThreshold;
+    availableWidth !== undefined &&
+    availableWidth + COLLAPSE_TOLERANCE_PX < minPanelWidthPx;
 
   const fixedWidths = React.useMemo(() => {
     if (

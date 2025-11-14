@@ -54,11 +54,9 @@ import { MacWindowWrapper } from "./MacWindowWrapper";
 import { CsmDirectionalLight } from "./CsmDirectionalLight";
 import { VISER_VERSION, GITHUB_CONTRIBUTORS, Contributor } from "./VersionInfo";
 import {
-  CANVAS_MIN_SHRINK_RATIO,
   COLUMN_GAP_PX,
   DEFAULT_CANVAS_RATIO,
   DEFAULT_FIRST_COLUMN_WIDTH_PX,
-  DEFAULT_JOINT_COLUMN_WIDTH_PX,
   FIRST_COLUMN_MIN_RATIO,
   JOINT_COLUMN_MIN_WIDTH_PX,
   MIN_CANVAS_RATIO,
@@ -373,131 +371,59 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
     const columnCount = DEFAULT_JOINT_COLUMN_COUNT + 1;
     const jointCount = Math.max(columnCount - 1, 0);
     const gapTotal = COLUMN_GAP_PX * Math.max(columnCount - 1, 0);
+    const minPanelWidth =
+      DEFAULT_FIRST_COLUMN_WIDTH_PX * FIRST_COLUMN_MIN_RATIO +
+      JOINT_COLUMN_MIN_WIDTH_PX * jointCount +
+      gapTotal;
+    const minCanvasWidth = MIN_CANVAS_RATIO * clampedViewportWidth;
+    const maxPanelWidth = Math.max(clampedViewportWidth - minCanvasWidth, 0);
 
-    const defaultCanvasWidth = DEFAULT_CANVAS_RATIO * clampedViewportWidth;
-    const defaultPanelWidth = Math.max(0, clampedViewportWidth - defaultCanvasWidth);
-
-    const basePanelWithoutGaps =
-      DEFAULT_FIRST_COLUMN_WIDTH_PX +
-      jointCount * DEFAULT_JOINT_COLUMN_WIDTH_PX;
-    const basePanelWidth = basePanelWithoutGaps + gapTotal;
-    const scale = basePanelWidth > 0 ? defaultPanelWidth / basePanelWidth : 1;
-
-    let firstWidth = DEFAULT_FIRST_COLUMN_WIDTH_PX * scale;
-    const jointWidths = Array.from({ length: jointCount }, () => ({
-      value: DEFAULT_JOINT_COLUMN_WIDTH_PX * scale,
-    }));
-    let canvasWidth = defaultCanvasWidth;
-
-    const firstMin = firstWidth * FIRST_COLUMN_MIN_RATIO;
-    const jointMins = jointWidths.map((joint) =>
-      Math.min(joint.value, JOINT_COLUMN_MIN_WIDTH_PX),
-    );
-    const canvasMin = Math.min(
+    let canvasWidthPx = DEFAULT_CANVAS_RATIO * clampedViewportWidth;
+    canvasWidthPx = Math.min(
+      Math.max(canvasWidthPx, minCanvasWidth),
       clampedViewportWidth,
-      Math.max(canvasWidth * CANVAS_MIN_SHRINK_RATIO, 0),
     );
 
-    const sumJoint = jointWidths.reduce((acc, joint) => acc + joint.value, 0);
-    const minTotalWidth =
-      Math.max(firstMin, 0) +
-      jointMins.reduce((acc, min) => acc + Math.max(min, 0), 0) +
-      gapTotal +
-      canvasMin;
+    let panelWidthPx = Math.max(clampedViewportWidth - canvasWidthPx, 0);
 
-    if (minTotalWidth >= clampedViewportWidth) {
-      const constrainedCanvas = Math.max(
-        0,
-        Math.min(canvasMin, clampedViewportWidth),
+    if (panelWidthPx < minPanelWidth) {
+      const needed = minPanelWidth - panelWidthPx;
+      const canvasShrink = Math.min(
+        needed,
+        Math.max(canvasWidthPx - minCanvasWidth, 0),
       );
-      const panelWidth = Math.max(0, clampedViewportWidth - constrainedCanvas);
-      const panelRatio =
-        clampedViewportWidth > 0 ? panelWidth / clampedViewportWidth : 0;
-      return {
-        panelWidthPx: panelWidth,
-        canvasWidthPx: constrainedCanvas,
-        panelRatio,
-      };
-    }
-
-    let panelWidthCandidate = firstWidth + sumJoint + gapTotal;
-    let deficit =
-      panelWidthCandidate + canvasWidth - clampedViewportWidth;
-
-    if (deficit > 0) {
-      const canvasShrinkCapacity = Math.max(canvasWidth - canvasMin, 0);
-      const canvasShrink = Math.min(deficit, canvasShrinkCapacity);
       if (canvasShrink > 0) {
-        canvasWidth -= canvasShrink;
-        deficit -= canvasShrink;
+        canvasWidthPx -= canvasShrink;
+        panelWidthPx += canvasShrink;
       }
+      panelWidthPx = Math.max(clampedViewportWidth - canvasWidthPx, 0);
     }
 
-    if (deficit > 0 && jointCount > 0) {
-      const jointCapacity = jointWidths.reduce(
-        (acc, joint, idx) =>
-          acc + Math.max(joint.value - jointMins[idx], 0),
-        0,
-      );
-      const jointShrink = Math.min(deficit, jointCapacity);
-      if (jointShrink > 0) {
-        let remaining = jointShrink;
-        let jointsRemaining = jointCount;
-        for (let idx = 0; idx < jointCount; idx += 1) {
-          if (remaining <= 0) {
-            break;
-          }
-          const minWidth = jointMins[idx];
-          const current = jointWidths[idx].value;
-          const available = Math.max(current - minWidth, 0);
-          const share = Math.min(
-            available,
-            remaining / Math.max(jointsRemaining, 1),
-          );
-          jointWidths[idx].value = current - share;
-          remaining -= share;
-          jointsRemaining -= 1;
-        }
-        deficit -= jointShrink;
-      }
+    panelWidthPx = Math.min(panelWidthPx, maxPanelWidth);
+    if (panelWidthPx < 0) {
+      panelWidthPx = 0;
     }
 
-    if (deficit > 0) {
-      const firstShrinkCapacity = Math.max(firstWidth - firstMin, 0);
-      const firstShrink = Math.min(deficit, firstShrinkCapacity);
-      if (firstShrink > 0) {
-        firstWidth -= firstShrink;
-        deficit -= firstShrink;
-      }
-    }
-
-    const adjustedJointSum = jointWidths.reduce(
-      (acc, joint) => acc + joint.value,
+    const finalCanvasWidthPx = Math.max(
+      clampedViewportWidth - panelWidthPx,
+      minCanvasWidth,
+    );
+    const finalPanelWidthPx = Math.max(
+      Math.min(clampedViewportWidth - finalCanvasWidthPx, maxPanelWidth),
       0,
     );
-    panelWidthCandidate = firstWidth + adjustedJointSum + gapTotal;
 
-    let canvasWidthPx = clampedViewportWidth - panelWidthCandidate;
-    if (canvasWidthPx < canvasMin) {
-      canvasWidthPx = Math.max(0, canvasMin);
-      panelWidthCandidate = Math.max(
-        0,
-        clampedViewportWidth - canvasWidthPx,
-      );
-    } else {
-      canvasWidthPx = Math.max(canvasWidthPx, 0);
-    }
-
-    const panelWidthPx = Math.max(
-      0,
-      Math.min(panelWidthCandidate, clampedViewportWidth),
-    );
     const panelRatio =
-      clampedViewportWidth > 0 ? panelWidthPx / clampedViewportWidth : 0;
+      clampedViewportWidth > 0
+        ? Math.min(
+            Math.max(finalPanelWidthPx / clampedViewportWidth, 0),
+            1,
+          )
+        : 0;
 
     return {
-      panelWidthPx,
-      canvasWidthPx,
+      panelWidthPx: finalPanelWidthPx,
+      canvasWidthPx: finalCanvasWidthPx,
       panelRatio,
     };
   }, [clampedViewportWidth]);
