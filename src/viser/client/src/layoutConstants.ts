@@ -1,5 +1,5 @@
 export const DEFAULT_CANVAS_RATIO = 0.35;
-export const MIN_CANVAS_RATIO = 0.25;
+export const MIN_CANVAS_RATIO = 0.2;
 export const CANVAS_MIN_SHRINK_RATIO =
   MIN_CANVAS_RATIO / DEFAULT_CANVAS_RATIO; // Allow canvas to shrink to 20% of screen.
 export const DEFAULT_PANEL_RATIO = 1 - DEFAULT_CANVAS_RATIO;
