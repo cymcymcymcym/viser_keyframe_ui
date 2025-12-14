@@ -43,9 +43,22 @@ import SidebarPanel from "./SidebarPanel";
 const ROOT_CONTAINER_ID = "root";
 
 const MemoizedGeneratedGuiContainer = React.memo(GeneratedGuiContainer);
+const COLUMN_MIN_WIDTH_PX = 260;
+const COLUMN_GAP_PX = 12;
+const PANEL_MARGIN_PX = 48;
 
-export default function ControlPanel(props: {
+type PanelMetrics = { widthPx: number; ratio: number };
+
+export default function ControlPanel({
+  control_layout,
+  onLayoutMetricsChange,
+  minCanvasRatio = 0.3,
+  forcedPanelRatio,
+}: {
   control_layout: ThemeConfigurationMessage["control_layout"];
+  onLayoutMetricsChange?: (metrics: PanelMetrics) => void;
+  minCanvasRatio?: number;
+  forcedPanelRatio?: number;
 }) {
   const theme = useMantineTheme();
   const useMobileView = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
@@ -61,15 +74,100 @@ export default function ControlPanel(props: {
   const controlWidthString = viewer.useGui(
     (state) => state.theme.control_width,
   );
-  const controlWidth = (
-    controlWidthString == "small"
-      ? "16em"
-      : controlWidthString == "medium"
-      ? "20em"
-      : controlWidthString == "large"
-      ? "24em"
-      : null
-  )!;
+  const CONTROL_WIDTH_EM: Record<string, number> = {
+    small: 16,
+    medium: 20,
+    large: 24,
+  };
+  const baseWidthEm =
+    controlWidthString && CONTROL_WIDTH_EM[controlWidthString]
+      ? CONTROL_WIDTH_EM[controlWidthString]
+      : 20;
+  const baseWidthPx = baseWidthEm * 16;
+
+  const columnLayoutInfo = viewer.useGui((state) => {
+    let maxColumns = 0;
+    let maxRatioSum = 0;
+    let maxMinWidthPx = 0;
+    for (const config of Object.values(state.guiConfigFromUuid)) {
+      if (config?.type === "GuiColumnsMessage") {
+        const columnCount = config.props._column_container_ids.length;
+        const ratiosRaw =
+          config.props.column_widths && config.props.column_widths.length === columnCount
+            ? config.props.column_widths
+            : Array.from({ length: columnCount }, () => 1);
+        const ratios = ratiosRaw.map((value) => (value > 0 ? value : 0));
+        const ratioSum = ratios.reduce((acc, value) => acc + value, 0);
+        const minWidth =
+          columnCount * COLUMN_MIN_WIDTH_PX +
+          COLUMN_GAP_PX * Math.max(columnCount - 1, 0);
+        maxColumns = Math.max(maxColumns, columnCount);
+        maxRatioSum = Math.max(maxRatioSum, ratioSum);
+        maxMinWidthPx = Math.max(maxMinWidthPx, minWidth);
+      }
+    }
+    return {
+      maxColumns,
+      maxRatioSum,
+      maxMinWidthPx,
+    };
+  });
+
+  const [viewportWidth, setViewportWidth] = React.useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1280,
+  );
+
+  React.useEffect(() => {
+    function onResize() {
+      setViewportWidth(window.innerWidth);
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const desiredRatio = Math.min(0.95, columnLayoutInfo.maxRatioSum || 0);
+  const desiredWidthFromRatio =
+    desiredRatio > 0 ? desiredRatio * viewportWidth : 0;
+  const desiredWidthPx = Math.max(
+    0,
+    Math.max(
+      baseWidthPx,
+      columnLayoutInfo.maxMinWidthPx,
+      desiredWidthFromRatio,
+    ),
+  );
+
+  const availableViewportWidth = Math.max(
+    viewportWidth - PANEL_MARGIN_PX,
+    baseWidthPx,
+  );
+
+  const maxPanelWidthByCanvas = Math.max(
+    0,
+    viewportWidth * (1 - minCanvasRatio),
+  );
+
+  let computedPanelWidthPx = Math.max(
+    0,
+    Math.min(availableViewportWidth, desiredWidthPx, maxPanelWidthByCanvas),
+  );
+  if (forcedPanelRatio !== undefined && viewportWidth > 0) {
+    const clampedRatio = Math.max(
+      0,
+      Math.min(1 - minCanvasRatio, forcedPanelRatio),
+    );
+    computedPanelWidthPx = clampedRatio * viewportWidth;
+  }
+  const computedPanelWidth = `${computedPanelWidthPx}px`;
+
+  React.useEffect(() => {
+    if (!onLayoutMetricsChange) return;
+    const ratio = viewportWidth > 0 ? computedPanelWidthPx / viewportWidth : 0;
+    onLayoutMetricsChange({
+      widthPx: computedPanelWidthPx,
+      ratio: Math.min(1, Math.max(0, ratio)),
+    });
+  }, [computedPanelWidthPx, viewportWidth, onLayoutMetricsChange]);
 
   const generatedServerToggleButton = (
     <ActionIcon
@@ -126,10 +224,10 @@ export default function ControlPanel(props: {
         <BottomPanel.Contents>{panelContents}</BottomPanel.Contents>
       </BottomPanel>
     );
-  } else if (props.control_layout === "floating") {
+  } else if (control_layout === "floating") {
     /* Floating layout. */
     return (
-      <FloatingPanel width={controlWidth}>
+      <FloatingPanel width={computedPanelWidth}>
         <FloatingPanel.Handle>
           <ConnectionStatus />
           <FloatingPanel.HideWhenCollapsed>
@@ -137,15 +235,16 @@ export default function ControlPanel(props: {
             {generatedServerToggleButton}
           </FloatingPanel.HideWhenCollapsed>
         </FloatingPanel.Handle>
-        <FloatingPanel.Contents>{panelContents}</FloatingPanel.Contents>
+          <FloatingPanel.Contents>{panelContents}</FloatingPanel.Contents>
       </FloatingPanel>
     );
   } else {
     /* Sidebar view. */
     return (
       <SidebarPanel
-        width={controlWidth}
-        collapsible={props.control_layout === "collapsible"}
+        width={computedPanelWidth}
+        collapsible={control_layout === "collapsible"}
+        inline
       >
         <SidebarPanel.Handle>
           <ConnectionStatus />

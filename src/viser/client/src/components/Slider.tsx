@@ -23,6 +23,10 @@ export default function SliderComponent({
   const { setValue } = React.useContext(GuiComponentContext)!;
   if (!visible) return null;
   const updateValue = (value: number) => setValue(uuid, value);
+  const formattedValue =
+    typeof value === "number" && precision != null
+      ? Number(value.toFixed(precision))
+      : value;
   const input = (
     <Flex justify="space-between">
       <Slider
@@ -58,7 +62,7 @@ export default function SliderComponent({
         max={max}
         step={step ?? undefined}
         precision={precision}
-        value={value}
+        value={formattedValue}
         onChange={updateValue}
         marks={
           marks === null
@@ -81,18 +85,23 @@ export default function SliderComponent({
         disabled={disabled}
       />
       <NumberInput
-        value={value}
+        value={formattedValue}
         onChange={(newValue) => {
-          // Ignore empty values.
-          newValue !== "" && updateValue(Number(newValue));
+          if (newValue === "") {
+            return;
+          }
+          const numeric = Number(newValue);
+          if (Number.isFinite(numeric)) {
+            const formatted = precision != null ? Number(numeric.toFixed(precision)) : numeric;
+            updateValue(formatted);
+          }
         }}
         size="xs"
         min={min}
         max={max}
         hideControls
         step={step ?? undefined}
-        // precision={precision}
-        style={{ width: "3rem" }}
+        style={{ width: precision && precision > 3 ? "3.5rem" : "3rem" }}
         styles={{
           input: {
             padding: "0.375em",

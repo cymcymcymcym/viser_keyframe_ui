@@ -15,6 +15,7 @@ from typing import (
     Generic,
     Iterable,
     Literal,
+    Sequence,
     Tuple,
     TypeVar,
 )
@@ -33,6 +34,7 @@ from ._messages import (
     GuiCheckboxProps,
     GuiCloseModalMessage,
     GuiDropdownProps,
+    GuiColumnsProps,
     GuiFolderProps,
     GuiHtmlProps,
     GuiImageProps,
@@ -657,6 +659,132 @@ class GuiTabHandle:
             child.remove()
         self._parent._impl.gui_api._container_handle_from_uuid.pop(self._id)
 
+
+@dataclasses.dataclass
+class _GuiColumnsColumn(SupportsRemoveProtocol):
+    _gui_api: "GuiApi"
+    _column_id: str
+    _parent: "GuiColumnsHandle"
+    _children: dict[str, SupportsRemoveProtocol] = dataclasses.field(
+        default_factory=dict
+    )
+    _container_id_restore: str | None = None
+    _removed: bool = False
+
+    def __post_init__(self) -> None:
+        self._gui_api._container_handle_from_uuid[self._column_id] = self
+        self._parent._children[self._column_id] = self
+
+    def __enter__(self) -> "_GuiColumnsColumn":
+        self._container_id_restore = self._gui_api._get_container_uuid()
+        self._gui_api._set_container_uuid(self._column_id)
+        return self
+
+    def __exit__(self, *args) -> None:
+        del args
+        if self._container_id_restore is None:
+            return
+        self._gui_api._set_container_uuid(self._container_id_restore)
+        self._container_id_restore = None
+
+    def remove(self) -> None:
+        if self._removed:
+            return
+        self._removed = True
+        for child in tuple(self._children.values()):
+            child.remove()
+        self._children.clear()
+        self._gui_api._container_handle_from_uuid.pop(self._column_id, None)
+        self._parent._children.pop(self._column_id, None)
+
+
+class GuiColumnsHandle(_GuiHandle[None], GuiColumnsProps):
+    """Handle for multi-column GUI layouts."""
+
+    def __init__(
+        self,
+        _impl: _GuiHandleState[None],
+        *,
+        column_container_ids: Tuple[str, ...],
+    ) -> None:
+        super().__init__(impl=_impl)
+        self._impl.gui_api._container_handle_from_uuid[self._impl.uuid] = self
+        self._children: dict[str, SupportsRemoveProtocol] = {}
+        self._column_handles: Tuple[_GuiColumnsColumn, ...] = tuple(
+            _GuiColumnsColumn(
+                _gui_api=self._impl.gui_api,
+                _column_id=column_id,
+                _parent=self,
+            )
+            for column_id in column_container_ids
+        )
+
+    def __len__(self) -> int:
+        return len(self._column_handles)
+
+    def __getitem__(self, index: int) -> _GuiColumnsColumn:
+        return self._column_handles[index]
+
+    def __iter__(self):
+        return iter(self._column_handles)
+
+    def column(self, index: int) -> _GuiColumnsColumn:
+        return self._column_handles[index]
+
+    @property
+    def widths(self) -> Tuple[float, ...] | None:
+        stored = self._impl.props.column_widths
+        if stored is None:
+            return None
+        return tuple(stored)
+
+    @widths.setter
+    def widths(self, widths: Sequence[float] | None) -> None:
+        if widths is None:
+            self._impl.props.column_widths = None
+            payload: Sequence[float] | None = None
+        else:
+            widths_tuple = tuple(float(w) for w in widths)
+            if len(widths_tuple) != len(self._column_handles):
+                raise ValueError(
+                    "Width sequence length must match the number of columns."
+                )
+            if any(w < 0 for w in widths_tuple):
+                raise ValueError("Column widths must be non-negative.")
+            self._impl.props.column_widths = widths_tuple
+            payload = widths_tuple
+        self._impl.gui_api._websock_interface.queue_message(
+            GuiUpdateMessage(
+                self._impl.uuid,
+                {"column_widths": payload},
+            )
+        )
+
+    @property
+    def column_container_ids(self) -> Tuple[str, ...]:
+        return tuple(handle._column_id for handle in self._column_handles)
+
+    def remove(self) -> None:
+        if self._impl.removed:
+            warnings.warn(
+                f"Attempted to remove an already removed {self.__class__.__name__}.",
+                stacklevel=2,
+            )
+            return
+        self._impl.removed = True
+
+        for column in tuple(self._column_handles):
+            column.remove()
+        gui_api = self._impl.gui_api
+        gui_api._websock_interface.get_message_buffer().remove_from_buffer(
+            lambda message: isinstance(message, GuiUpdateMessage)
+            and message.uuid == self._impl.uuid
+        )
+        gui_api._websock_interface.queue_message(GuiRemoveMessage(self._impl.uuid))
+        parent = gui_api._container_handle_from_uuid[self._impl.parent_container_id]
+        parent._children.pop(self._impl.uuid)
+        gui_api._container_handle_from_uuid.pop(self._impl.uuid, None)
+        self._column_handles = tuple()
 
 class GuiFolderHandle(_GuiHandle[None], GuiFolderProps):
     """Use as a context to place GUI elements into a folder."""

@@ -9,7 +9,11 @@ import { Notifications } from "@mantine/notifications";
 import { Environment, PerformanceMonitor, Stats } from "@react-three/drei";
 import * as THREE from "three";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  DEFAULT_VIEWPORT_METRICS,
+  ViewportLayoutProvider,
+} from "./ViewportLayoutContext";
 import { ViewerMutable } from "./ViewerContext";
 import {
   Anchor,
@@ -28,6 +32,7 @@ import { useDisclosure } from "@mantine/hooks";
 // Local imports.
 import { SynchronizedCameraControls } from "./CameraControls";
 import { SceneNodeThreeObject } from "./SceneTree";
+import { shallowArrayEqual } from "./utils/shallowArrayEqual";
 import { ViewerContext, ViewerContextContents } from "./ViewerContext";
 import ControlPanel from "./ControlPanel/ControlPanel";
 import { useGuiState } from "./ControlPanel/GuiState";
@@ -48,6 +53,17 @@ import { BrowserWarning } from "./BrowserWarning";
 import { MacWindowWrapper } from "./MacWindowWrapper";
 import { CsmDirectionalLight } from "./CsmDirectionalLight";
 import { VISER_VERSION, GITHUB_CONTRIBUTORS, Contributor } from "./VersionInfo";
+import {
+  COLUMN_GAP_PX,
+  DEFAULT_CANVAS_RATIO,
+  DEFAULT_FIRST_COLUMN_WIDTH_PX,
+  FIRST_COLUMN_MIN_RATIO,
+  JOINT_COLUMN_MIN_WIDTH_PX,
+  MIN_CANVAS_RATIO,
+  DEFAULT_JOINT_COLUMN_COUNT,
+} from "./layoutConstants";
+
+const DEFAULT_ROOT_SCALE = 1;
 
 // ======= Utility functions =======
 
@@ -60,11 +76,13 @@ function ndcFromPointerXy(
   viewer: ViewerContextContents,
   xy: [number, number],
 ): THREE.Vector2 | null {
+  const metrics = viewer.mutable.current.viewportMetrics;
+  if (metrics.width <= 0 || metrics.height <= 0) {
+    return null;
+  }
   const mouseVector = new THREE.Vector2();
-  mouseVector.x =
-    2 * ((xy[0] + 0.5) / viewer.mutable.current.canvas!.clientWidth) - 1;
-  mouseVector.y =
-    1 - 2 * ((xy[1] + 0.5) / viewer.mutable.current.canvas!.clientHeight);
+  mouseVector.x = 2 * ((xy[0] + 0.5) / metrics.width) - 1;
+  mouseVector.y = 1 - 2 * ((xy[1] + 0.5) / metrics.height);
   return mouseVector.x < 1 &&
     mouseVector.x > -1 &&
     mouseVector.y < 1 &&
@@ -82,9 +100,14 @@ function opencvXyFromPointerXy(
   viewer: ViewerContextContents,
   xy: [number, number],
 ): THREE.Vector2 {
+  const metrics = viewer.mutable.current.viewportMetrics;
   const mouseVector = new THREE.Vector2();
-  mouseVector.x = (xy[0] + 0.5) / viewer.mutable.current.canvas!.clientWidth;
-  mouseVector.y = (xy[1] + 0.5) / viewer.mutable.current.canvas!.clientHeight;
+  if (metrics.width <= 0 || metrics.height <= 0) {
+    mouseVector.set(0, 0);
+    return mouseVector;
+  }
+  mouseVector.x = (xy[0] + 0.5) / metrics.width;
+  mouseVector.y = (xy[1] + 0.5) / metrics.height;
   return mouseVector;
 }
 
@@ -107,6 +130,34 @@ const DisableRender = (): null => useFrame(() => null, 1000);
  * Root application component - handles dummy window wrapper if needed.
  */
 export function Root() {
+  useEffect(() => {
+    const rootElement = document.getElementById("root");
+    if (!rootElement) {
+      return;
+    }
+
+    const previousTransform = rootElement.style.transform;
+    const previousTransformOrigin = rootElement.style.transformOrigin;
+    const previousWidth = rootElement.style.width;
+
+    const scale = DEFAULT_ROOT_SCALE;
+    const expandedWidthPercent = `${(1 / scale) * 100}%`;
+
+    rootElement.style.transform = `scale(${scale})`;
+    rootElement.style.transformOrigin = "top left";
+    if (!previousWidth || previousWidth === "") {
+      rootElement.style.width = expandedWidthPercent;
+    } else {
+      rootElement.style.width = expandedWidthPercent;
+    }
+
+    return () => {
+      rootElement.style.transform = previousTransform;
+      rootElement.style.transformOrigin = previousTransformOrigin;
+      rootElement.style.width = previousWidth;
+    };
+  }, []);
+
   const searchParams = new URLSearchParams(window.location.search);
   const dummyWindowParam = searchParams.get("dummyWindowDimensions");
   const dummyWindowTitle =
@@ -192,6 +243,7 @@ function ViewerRoot() {
     camera: null,
     backgroundMaterial: null,
     cameraControl: null,
+    viewportMetrics: DEFAULT_VIEWPORT_METRICS,
 
     // Scene management.
     nodeRefFromName,
@@ -276,15 +328,112 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
   );
   const canvases = useMemo(
     () => (
-      <>
-        <Viewer2DCanvas />
-        <ViewerCanvas>
-          <FrameSynchronizedMessageHandler />
-        </ViewerCanvas>
-      </>
+      <ViewerCanvas>
+        <FrameSynchronizedMessageHandler />
+      </ViewerCanvas>
     ),
     [],
   );
+  const defaultViewportWidth = React.useMemo(
+    () => (typeof window !== "undefined" ? window.innerWidth : 1280),
+    [],
+  );
+  const isFloatingLayout = controlLayout === "floating";
+  const [viewportWidth, setViewportWidth] = React.useState(() =>
+    typeof window !== "undefined"
+      ? window.innerWidth
+      : defaultViewportWidth,
+  );
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const onResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const clampedViewportWidth = Number.isFinite(viewportWidth)
+    ? Math.max(viewportWidth, 1)
+    : 1280;
+
+  const layoutMetrics = React.useMemo(() => {
+    if (clampedViewportWidth <= 0) {
+      return {
+        panelWidthPx: 0,
+        canvasWidthPx: 0,
+        panelRatio: 0,
+      };
+    }
+
+    const columnCount = DEFAULT_JOINT_COLUMN_COUNT + 1;
+    const jointCount = Math.max(columnCount - 1, 0);
+    const gapTotal = COLUMN_GAP_PX * Math.max(columnCount - 1, 0);
+    const minPanelWidth =
+      DEFAULT_FIRST_COLUMN_WIDTH_PX * FIRST_COLUMN_MIN_RATIO +
+      JOINT_COLUMN_MIN_WIDTH_PX * jointCount +
+      gapTotal;
+    const minCanvasWidth = MIN_CANVAS_RATIO * clampedViewportWidth;
+    const maxPanelWidth = Math.max(clampedViewportWidth - minCanvasWidth, 0);
+
+    let canvasWidthPx = DEFAULT_CANVAS_RATIO * clampedViewportWidth;
+    canvasWidthPx = Math.min(
+      Math.max(canvasWidthPx, minCanvasWidth),
+      clampedViewportWidth,
+    );
+
+    let panelWidthPx = Math.max(clampedViewportWidth - canvasWidthPx, 0);
+
+    if (panelWidthPx < minPanelWidth) {
+      const needed = minPanelWidth - panelWidthPx;
+      const canvasShrink = Math.min(
+        needed,
+        Math.max(canvasWidthPx - minCanvasWidth, 0),
+      );
+      if (canvasShrink > 0) {
+        canvasWidthPx -= canvasShrink;
+        panelWidthPx += canvasShrink;
+      }
+      panelWidthPx = Math.max(clampedViewportWidth - canvasWidthPx, 0);
+    }
+
+    panelWidthPx = Math.min(panelWidthPx, maxPanelWidth);
+    if (panelWidthPx < 0) {
+      panelWidthPx = 0;
+    }
+
+    const finalCanvasWidthPx = Math.max(
+      clampedViewportWidth - panelWidthPx,
+      minCanvasWidth,
+    );
+    const finalPanelWidthPx = Math.max(
+      Math.min(clampedViewportWidth - finalCanvasWidthPx, maxPanelWidth),
+      0,
+    );
+
+    const panelRatio =
+      clampedViewportWidth > 0
+        ? Math.min(
+            Math.max(finalPanelWidthPx / clampedViewportWidth, 0),
+            1,
+          )
+        : 0;
+
+    return {
+      panelWidthPx: finalPanelWidthPx,
+      canvasWidthPx: finalCanvasWidthPx,
+      panelRatio,
+    };
+  }, [clampedViewportWidth]);
+
+  const panelWidthPx = layoutMetrics.panelWidthPx;
+  const canvasWidthPx = layoutMetrics.canvasWidthPx;
+  const forcedPanelRatio = layoutMetrics.panelRatio;
+
+  const panelWidthPxString = `${Math.round(panelWidthPx)}px`;
+  const canvasWidthPxString = `${Math.round(canvasWidthPx)}px`;
   return (
     <>
       <MantineProvider
@@ -317,27 +466,72 @@ function ViewerContents({ children }: { children: React.ReactNode }) {
         >
           <Titlebar />
           <Box
-            style={{
-              width: "100%",
-              position: "relative",
-              flexGrow: 1,
-              overflow: "hidden",
-              display: "flex",
-            }}
+            style={
+              isFloatingLayout
+                ? {
+                    width: "100%",
+                    position: "relative",
+                    flexGrow: 1,
+                    overflow: "hidden",
+                    display: "flex",
+                  }
+                : {
+                    width: "100%",
+                    position: "relative",
+                    flexGrow: 1,
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "stretch",
+                  }
+            }
           >
             <Box
               style={(theme) => ({
                 backgroundColor: darkMode ? theme.colors.dark[9] : "#fff",
-                flexGrow: 1,
                 overflow: "hidden",
                 height: "100%",
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                ...(isFloatingLayout
+                  ? { flexGrow: 1, minWidth: 0 }
+                  : {
+                      flex: `0 0 ${canvasWidthPxString}`,
+                      width: canvasWidthPxString,
+                      minWidth: canvasWidthPxString,
+                      maxWidth: canvasWidthPxString,
+                    }),
               })}
             >
               {canvases}
               {showLogo && messageSource === "websocket" && <ViserLogo />}
             </Box>
             {messageSource === "websocket" && (
-              <ControlPanel control_layout={controlLayout} />
+              isFloatingLayout ? (
+                <ControlPanel
+                  control_layout={controlLayout}
+                  minCanvasRatio={MIN_CANVAS_RATIO}
+                />
+              ) : (
+                <Box
+                  style={{
+                    flex: `0 0 ${panelWidthPxString}`,
+                    width: panelWidthPxString,
+                    minWidth: panelWidthPxString,
+                    maxWidth: panelWidthPxString,
+                    height: "100%",
+                    display: "flex",
+                    justifyContent: "stretch",
+                  }}
+                >
+                  <ControlPanel
+                    control_layout={controlLayout}
+                    minCanvasRatio={MIN_CANVAS_RATIO}
+                    forcedPanelRatio={forcedPanelRatio}
+                  />
+                </Box>
+              )
             )}
           </Box>
         </Box>
@@ -390,12 +584,44 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
   const sendClickThrottled = useThrottledMessageSender(20).send;
   const theme = useMantineTheme();
   const { ref: inViewRef, inView } = useInView();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerElement, setContainerElement] = useState<
+    HTMLDivElement | null
+  >(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const assignContainerRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node;
+      setContainerElement(node);
+      inViewRef(node);
+    },
+    [inViewRef],
+  );
 
   // Memoize camera controls to prevent unnecessary re-creation.
   const memoizedCameraControls = useMemo(
     () => <SynchronizedCameraControls />,
     [],
   );
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      const overlayCanvas = overlayCanvasRef.current;
+      if (!overlayCanvas) return;
+      overlayCanvas.width = width;
+      overlayCanvas.height = height;
+    });
+
+    if (containerElement) {
+      resizeObserver.observe(containerElement);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [containerElement]);
 
   // Handle pointer down event. I don't think we need useCallback here, since
   // remounts should be very rare.
@@ -404,18 +630,23 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
     const pointerInfo = mutable.current.scenePointerInfo;
     if (pointerInfo.enabled === false) return;
 
-    const canvasBbox = mutable.current.canvas!.getBoundingClientRect();
-    pointerInfo.dragStart = [
-      e.clientX - canvasBbox.left,
-      e.clientY - canvasBbox.top,
-    ];
+    const metrics = mutable.current.viewportMetrics;
+    if (metrics.width <= 0 || metrics.height <= 0) {
+      return;
+    }
+    const pointerX = e.clientX - metrics.left;
+    const pointerY = e.clientY - metrics.top;
+    pointerInfo.dragStart = [pointerX, pointerY];
     pointerInfo.dragEnd = pointerInfo.dragStart;
 
     if (ndcFromPointerXy(viewer, pointerInfo.dragEnd) === null) return;
     if (pointerInfo.isDragging) return;
 
     pointerInfo.isDragging = true;
-    mutable.current.cameraControl!.enabled = false;
+    const cameraControls = mutable.current.cameraControl;
+    if (cameraControls) {
+      cameraControls.enabled = false;
+    }
 
     const ctx = mutable.current.canvas2d!.getContext("2d")!;
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -427,10 +658,13 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
     const pointerInfo = mutable.current.scenePointerInfo;
     if (pointerInfo.enabled === false || !pointerInfo.isDragging) return;
 
-    const canvasBbox = mutable.current.canvas!.getBoundingClientRect();
+    const metrics = mutable.current.viewportMetrics;
+    if (metrics.width <= 0 || metrics.height <= 0) {
+      return;
+    }
     const pointerXy: [number, number] = [
-      e.clientX - canvasBbox.left,
-      e.clientY - canvasBbox.top,
+      e.clientX - metrics.left,
+      e.clientY - metrics.top,
     ];
 
     if (ndcFromPointerXy(viewer, pointerXy) === null) return;
@@ -468,7 +702,10 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
     const pointerInfo = mutable.current.scenePointerInfo;
 
     // Re-enable camera controls.
-    mutable.current.cameraControl!.enabled = true;
+    const cameraControls = mutable.current.cameraControl;
+    if (cameraControls) {
+      cameraControls.enabled = true;
+    }
     if (pointerInfo.enabled === false || !pointerInfo.isDragging) return;
 
     const ctx = mutable.current.canvas2d!.getContext("2d")!;
@@ -502,25 +739,45 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
     [children, memoizedCameraControls],
   );
   return (
-    <div
-      ref={inViewRef}
-      style={{ position: "relative", zIndex: 0, width: "100%", height: "100%" }}
-    >
-      <Canvas
-        camera={{ position: [-3.0, 3.0, -3.0], near: 0.01, far: 1000.0 }}
-        gl={{ preserveDrawingBuffer: true }}
-        style={{ width: "100%", height: "100%" }}
-        ref={(el) => (viewer.mutable.current.canvas = el)}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        shadows
-        dpr={fixedDpr ?? undefined}
+    <ViewportLayoutProvider targetRef={containerRef}>
+      <div
+        ref={assignContainerRef}
+        style={{
+          position: "relative",
+          zIndex: 0,
+          width: "100%",
+          height: "100%",
+        }}
       >
-        {!inView && <DisableRender />}
-        {sceneContents}
-      </Canvas>
-    </div>
+        <canvas
+          ref={(el) => {
+            overlayCanvasRef.current = el;
+            viewer.mutable.current.canvas2d = el;
+          }}
+          style={{
+            position: "absolute",
+            zIndex: 1,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+          }}
+        />
+        <Canvas
+          camera={{ position: [-3.0, 3.0, -3.0], near: 0.01, far: 1000.0 }}
+          gl={{ preserveDrawingBuffer: true }}
+          style={{ width: "100%", height: "100%" }}
+          ref={(el) => (viewer.mutable.current.canvas = el)}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          shadows
+          dpr={fixedDpr ?? undefined}
+        >
+          {!inView && <DisableRender />}
+          {sceneContents}
+        </Canvas>
+      </div>
+    </ViewportLayoutProvider>
   );
 }
 
@@ -595,6 +852,7 @@ function DefaultLights() {
   // Get world rotation directly from scene tree state.
   const worldRotation = viewer.useSceneTree(
     (state) => state[""]?.wxyz ?? [1, 0, 0, 0],
+    shallowArrayEqual,
   );
 
   // Calculate environment map.
@@ -706,40 +964,6 @@ function AdaptiveDpr() {
           `[Performance] Setting DPR to ${dpr}; FPS=${fps}/${refreshrate}`,
         );
         setDpr(dpr);
-      }}
-    />
-  );
-}
-
-/**
- * 2D canvas overlay for drawing selection rectangles.
- */
-function Viewer2DCanvas() {
-  const viewer = React.useContext(ViewerContext)!;
-
-  useEffect(() => {
-    const canvas = viewer.mutable.current.canvas2d!;
-
-    // Create a resize observer to update canvas dimensions.
-    const resizeObserver = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      canvas.width = width;
-      canvas.height = height;
-    });
-
-    resizeObserver.observe(canvas);
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  return (
-    <canvas
-      ref={(el) => (viewer.mutable.current.canvas2d = el)}
-      style={{
-        position: "absolute",
-        zIndex: 1,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
       }}
     />
   );

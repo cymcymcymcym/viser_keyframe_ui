@@ -1,4 +1,5 @@
 import { ViewerContext } from "./ViewerContext";
+import { useViewportMetrics } from "./ViewportLayoutContext";
 import { CameraControls, Instance, Instances } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import * as holdEvent from "hold-event";
@@ -131,6 +132,7 @@ function OrbitOriginTool({
 export function SynchronizedCameraControls() {
   const viewer = useContext(ViewerContext)!;
   const camera = useThree((state) => state.camera as PerspectiveCamera);
+  const viewportMetrics = useViewportMetrics();
 
   const sendCameraThrottled = useThrottledMessageSender(20).send;
 
@@ -463,18 +465,31 @@ export function SynchronizedCameraControls() {
     setTimeout(() => sendCamera(), 50);
   }, [connected, sendCamera]);
 
-  // Send camera for 3D viewport changes.
-  const canvas = viewerMutable.canvas!; // R3F canvas.
+  // Keep camera metadata aligned with viewport bounds.
   React.useEffect(() => {
-    // Create a resize observer to resize the CSS canvas when the window is resized.
-    const resizeObserver = new ResizeObserver(() => {
-      sendCamera();
-    });
-    resizeObserver.observe(canvas);
-
-    // Cleanup.
-    return () => resizeObserver.disconnect();
-  }, [canvas]);
+    const cameraControls = viewer.mutable.current.cameraControl;
+    if (!cameraControls) {
+      return;
+    }
+    const position = cameraControls.getPosition(new THREE.Vector3());
+    const target = cameraControls.getTarget(new THREE.Vector3());
+    cameraControls.setLookAt(
+      position.x,
+      position.y,
+      position.z,
+      target.x,
+      target.y,
+      target.z,
+      false,
+    );
+    sendCamera();
+  }, [
+    viewportMetrics.width,
+    viewportMetrics.height,
+    viewportMetrics.left,
+    viewportMetrics.top,
+    sendCamera,
+  ]);
 
   // Keyboard controls.
   React.useEffect(() => {

@@ -2,6 +2,7 @@ from ._gui_api import GuiApi as GuiApi
 from ._gui_handles import GuiButtonGroupHandle as GuiButtonGroupHandle
 from ._gui_handles import GuiButtonHandle as GuiButtonHandle
 from ._gui_handles import GuiCheckboxHandle as GuiCheckboxHandle
+from ._gui_handles import GuiColumnsHandle as GuiColumnsHandle
 from ._gui_handles import GuiDropdownHandle as GuiDropdownHandle
 from ._gui_handles import GuiEvent as GuiEvent
 from ._gui_handles import GuiFolderHandle as GuiFolderHandle
@@ -30,6 +31,7 @@ from ._scene_api import SceneApi as SceneApi
 from ._scene_handles import AmbientLightHandle as AmbientLightHandle
 from ._scene_handles import BatchedAxesHandle as BatchedAxesHandle
 from ._scene_handles import BatchedGlbHandle as BatchedGlbHandle
+from ._scene_handles import BatchedLabelsHandle as BatchedLabelsHandle
 from ._scene_handles import BatchedMeshHandle as BatchedMeshHandle
 from ._scene_handles import BoxHandle as BoxHandle
 from ._scene_handles import CameraFrustumHandle as CameraFrustumHandle

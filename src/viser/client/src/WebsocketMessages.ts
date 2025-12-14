@@ -100,7 +100,49 @@ export interface GridMessage {
 export interface LabelMessage {
   type: "LabelMessage";
   name: string;
-  props: { text: string };
+  props: {
+    text: string;
+    font_size_mode: "screen" | "scene";
+    font_screen_scale: number;
+    font_scene_height: number;
+    depth_test: boolean;
+    anchor:
+      | "top-left"
+      | "top-center"
+      | "top-right"
+      | "center-left"
+      | "center-center"
+      | "center-right"
+      | "bottom-left"
+      | "bottom-center"
+      | "bottom-right";
+  };
+}
+/** Add batched 2D labels to the scene.
+ *
+ * (automatically generated)
+ */
+export interface BatchedLabelsMessage {
+  type: "BatchedLabelsMessage";
+  name: string;
+  props: {
+    batched_texts: string[];
+    batched_positions: Uint8Array<ArrayBuffer>;
+    font_size_mode: "screen" | "scene";
+    font_screen_scale: number;
+    font_scene_height: number;
+    depth_test: boolean;
+    anchor:
+      | "top-left"
+      | "top-center"
+      | "top-right"
+      | "center-left"
+      | "center-center"
+      | "center-right"
+      | "bottom-left"
+      | "bottom-center"
+      | "bottom-right";
+  };
 }
 /** Add a 3D gui element to the scene.
  *
@@ -741,6 +783,21 @@ export interface GuiTabGroupMessage {
     _tab_container_ids: string[];
     order: number;
     visible: boolean;
+  };
+}
+/** GuiColumnsMessage(uuid: 'str', container_uuid: 'str', props: 'GuiColumnsProps')
+ *
+ * (automatically generated)
+ */
+export interface GuiColumnsMessage {
+  type: "GuiColumnsMessage";
+  uuid: string;
+  container_uuid: string;
+  props: {
+    order: number;
+    visible: boolean;
+    column_widths: number[] | null;
+    _column_container_ids: string[];
   };
 }
 /** GuiButtonMessage(uuid: 'str', value: 'bool', container_uuid: 'str', props: 'GuiButtonProps')
@@ -1522,6 +1579,7 @@ export type Message =
   | BatchedAxesMessage
   | GridMessage
   | LabelMessage
+  | BatchedLabelsMessage
   | Gui3DMessage
   | PointCloudMessage
   | DirectionalLightMessage
@@ -1551,6 +1609,7 @@ export type Message =
   | GuiUplotMessage
   | GuiImageMessage
   | GuiTabGroupMessage
+  | GuiColumnsMessage
   | GuiButtonMessage
   | GuiUploadButtonMessage
   | GuiSliderMessage
@@ -1613,6 +1672,7 @@ export type SceneNodeMessage =
   | BatchedAxesMessage
   | GridMessage
   | LabelMessage
+  | BatchedLabelsMessage
   | Gui3DMessage
   | PointCloudMessage
   | DirectionalLightMessage
@@ -1642,6 +1702,7 @@ export type GuiComponentMessage =
   | GuiUplotMessage
   | GuiImageMessage
   | GuiTabGroupMessage
+  | GuiColumnsMessage
   | GuiButtonMessage
   | GuiUploadButtonMessage
   | GuiSliderMessage
@@ -1662,6 +1723,7 @@ const typeSetSceneNodeMessage = new Set([
   "BatchedAxesMessage",
   "GridMessage",
   "LabelMessage",
+  "BatchedLabelsMessage",
   "Gui3DMessage",
   "PointCloudMessage",
   "DirectionalLightMessage",
@@ -1697,6 +1759,7 @@ const typeSetGuiComponentMessage = new Set([
   "GuiUplotMessage",
   "GuiImageMessage",
   "GuiTabGroupMessage",
+  "GuiColumnsMessage",
   "GuiButtonMessage",
   "GuiUploadButtonMessage",
   "GuiSliderMessage",

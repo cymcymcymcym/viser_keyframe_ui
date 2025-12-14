@@ -18,6 +18,7 @@ import { Html } from "@react-three/drei";
 import { useSceneTreeState } from "./SceneTreeState";
 import { rayToViserCoords } from "./WorldTransformUtils";
 import { HoverableContext, HoverState } from "./HoverContext";
+import { shallowArrayEqual } from "./utils/shallowArrayEqual";
 
 /** Turn a click event to normalized OpenCV coordinate (NDC) vector.
  * Normalizes click coordinates to be between (0, 0) as upper-left corner,
@@ -37,14 +38,16 @@ import {
   CoordinateFrame,
   InstancedAxes,
   PointCloud,
+  ViserBatchedLabels,
   ViserImage,
+  ViserLabel,
 } from "./ThreeAssets";
 import { CameraFrustumComponent } from "./CameraFrustumVariants";
 import { SceneNodeMessage } from "./WebsocketMessages";
 import { SplatObject } from "./Splatting/GaussianSplats";
 import { Paper } from "@mantine/core";
 import GeneratedGuiContainer from "./ControlPanel/Generated";
-import { Line } from "./Line";
+import { LineSegments } from "./Line";
 import { shadowArgs } from "./ShadowArgs";
 import { CsmDirectionalLight } from "./CsmDirectionalLight";
 import { BasicMesh } from "./mesh/BasicMesh";
@@ -54,6 +57,7 @@ import { SkinnedMesh } from "./mesh/SkinnedMesh";
 import { BatchedMesh } from "./mesh/BatchedMesh";
 import { SingleGlbAsset } from "./mesh/SingleGlbAsset";
 import { BatchedGlbAsset } from "./mesh/BatchedGlbAsset";
+import { BatchedLabelManager } from "./BatchedLabelManager";
 
 function rgbToInt(rgb: [number, number, number]): number {
   return (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
@@ -173,15 +177,15 @@ function createObjectFactory(
         message.props.plane == "xz"
           ? new THREE.Euler(0.0, 0.0, 0.0)
           : message.props.plane == "xy"
-          ? new THREE.Euler(Math.PI / 2.0, 0.0, 0.0)
-          : message.props.plane == "yx"
-          ? new THREE.Euler(0.0, Math.PI / 2.0, Math.PI / 2.0)
-          : message.props.plane == "yz"
-          ? new THREE.Euler(0.0, 0.0, Math.PI / 2.0)
-          : message.props.plane == "zx"
-          ? new THREE.Euler(0.0, Math.PI / 2.0, 0.0)
-          : //message.props.plane == "zy"
-            new THREE.Euler(-Math.PI / 2.0, 0.0, -Math.PI / 2.0),
+            ? new THREE.Euler(Math.PI / 2.0, 0.0, 0.0)
+            : message.props.plane == "yx"
+              ? new THREE.Euler(0.0, Math.PI / 2.0, Math.PI / 2.0)
+              : message.props.plane == "yz"
+                ? new THREE.Euler(0.0, 0.0, Math.PI / 2.0)
+                : message.props.plane == "zx"
+                  ? new THREE.Euler(0.0, Math.PI / 2.0, 0.0)
+                  : //message.props.plane == "zy"
+                    new THREE.Euler(-Math.PI / 2.0, 0.0, -Math.PI / 2.0),
       );
 
       // When rotations are identity: plane is XY, while grid is XZ.
@@ -388,33 +392,21 @@ function createObjectFactory(
     case "LabelMessage": {
       return {
         makeObject: (ref, children) => (
-          // We wrap with <group /> because Html doesn't implement THREE.Object3D.
-          <group ref={ref}>
-            <Html>
-              <div
-                style={{
-                  width: "10em",
-                  fontSize: "0.8em",
-                  transform: "translateX(0.1em) translateY(0.5em)",
-                }}
-              >
-                <span
-                  style={{
-                    background: "#fff",
-                    border: "1px solid #777",
-                    borderRadius: "0.2em",
-                    color: "#333",
-                    padding: "0.2em",
-                  }}
-                >
-                  {message.props.text}
-                </span>
-              </div>
-            </Html>
+          <ViserLabel ref={ref} {...message}>
             {children}
-          </group>
+          </ViserLabel>
         ),
-        unmountWhenInvisible: true,
+        unmountWhenInvisible: false,
+      };
+    }
+    case "BatchedLabelsMessage": {
+      return {
+        makeObject: (ref, children) => (
+          <ViserBatchedLabels ref={ref} {...message}>
+            {children}
+          </ViserBatchedLabels>
+        ),
+        unmountWhenInvisible: false,
       };
     }
     case "Gui3DMessage": {
@@ -484,34 +476,11 @@ function createObjectFactory(
     }
     case "LineSegmentsMessage": {
       return {
-        makeObject: (ref, children) => {
-          // The array conversion here isn't very efficient. We go from buffer
-          // => TypeArray => Javascript Array, then back to buffers in drei's
-          // <Line /> abstraction.
-          const pointsArray = new Float32Array(
-            message.props.points.buffer.slice(
-              message.props.points.byteOffset,
-              message.props.points.byteOffset + message.props.points.byteLength,
-            ),
-          );
-          const colorArray = new Uint8Array(
-            message.props.colors.buffer.slice(
-              message.props.colors.byteOffset,
-              message.props.colors.byteOffset + message.props.colors.byteLength,
-            ),
-          );
-          return (
-            <group ref={ref}>
-              <Line
-                points={pointsArray}
-                lineWidth={message.props.line_width}
-                vertexColors={colorArray}
-                segments={true}
-              />
-              {children}
-            </group>
-          );
-        },
+        makeObject: (ref, children) => (
+          <LineSegments ref={ref} {...message}>
+            {children}
+          </LineSegments>
+        ),
       };
     }
     case "CatmullRomSplineMessage": {
@@ -740,39 +709,14 @@ export function SceneNodeThreeObject(props: { name: string }) {
     }, children);
   }, [makeObject, children]);
 
-  // Helper for transient visibility checks. Checks the .visible attribute of
-  // both this object and ancestors.
+  // Helper for transient visibility checks. Uses the cached effectiveVisibility
+  // which includes both this node and all ancestors in the scene tree.
   //
   // This is used for (1) suppressing click events and (2) unmounting when
   // unmountWhenInvisible is true. The latter is used for <Html /> components.
-  const parentRef = React.useRef<THREE.Object3D | null>(null);
   function isDisplayed(): boolean {
-    // We avoid checking objRef.current.visible because obj may be unmounted when
-    // unmountWhenInvisible=true.
     const node = viewer.useSceneTree.getState()[props.name];
-    const visibility =
-      (node?.overrideVisibility === undefined
-        ? node?.visibility
-        : node.overrideVisibility) ?? false;
-    if (visibility === false) return false;
-
-    // Check visibility of parents + ancestors by traversing the THREE.js hierarchy.
-    // This is needed for unmountWhenInvisible to work correctly.
-    if (groupRef.current && groupRef.current.parent !== null) {
-      // The parent will be unreadable after unmounting, so we cache it.
-      parentRef.current = groupRef.current.parent;
-    }
-    if (parentRef.current !== null) {
-      let visible = parentRef.current.visible;
-      if (visible) {
-        parentRef.current.traverseAncestors((ancestor) => {
-          visible = visible && ancestor.visible;
-        });
-      }
-      return visible;
-    }
-
-    return true;
+    return node?.effectiveVisibility ?? false;
   }
 
   // Pose needs to be updated whenever component is remounted / object is re-created.
@@ -814,14 +758,10 @@ export function SceneNodeThreeObject(props: { name: string }) {
       if (objRef.current === null) return;
       if (node === undefined) return;
 
-      // If no visibility is found: we assume it's invisible. This will hide
-      // scene nodes until we receive a visibility update, which always happens
-      // after creation.
-      const visibility =
-        (node?.overrideVisibility === undefined
-          ? node?.visibility
-          : node.overrideVisibility) ?? false;
-      objRef.current.visible = visibility;
+      // Set node-local visibility. Three.js automatically handles parent chain
+      // propagation (children of invisible parents are not rendered).
+      objRef.current.visible =
+        node.overrideVisibility ?? node.visibility ?? true;
 
       if (node.poseUpdateState == "needsUpdate") {
         // Update pose state through zustand action.
@@ -829,8 +769,10 @@ export function SceneNodeThreeObject(props: { name: string }) {
           poseUpdateState: "updated",
         });
 
-        const wxyz = node.wxyz ?? [1, 0, 0, 0];
-        objRef.current.quaternion.set(wxyz[1], wxyz[2], wxyz[3], wxyz[0]);
+        if (message!.type !== "LabelMessage") {
+          const wxyz = node.wxyz ?? [1, 0, 0, 0];
+          objRef.current.quaternion.set(wxyz[1], wxyz[2], wxyz[3], wxyz[0]);
+        }
         const position = node.position ?? [0, 0, 0];
         objRef.current.position.set(position[0], position[1], position[2]);
 
@@ -1018,8 +960,9 @@ function SceneNodeChildren(props: { name: string }) {
   const viewer = React.useContext(ViewerContext)!;
   const childrenNames = viewer.useSceneTree(
     (state) => state[props.name]?.children,
+    shallowArrayEqual,
   );
-  return (
+  const children = (
     <>
       {childrenNames &&
         childrenNames.map((child_id) => (
@@ -1028,4 +971,12 @@ function SceneNodeChildren(props: { name: string }) {
       <SceneNodeLabel name={props.name} />
     </>
   );
+  if (props.name == "") {
+    // Create a context for batched text rendering at the root level. We place
+    // this here instead of outside of the root node to make sure the root node
+    // rotation (eg, from `set_up_direction()`) is applied to text objects.
+    return <BatchedLabelManager>{children}</BatchedLabelManager>;
+  } else {
+    return children;
+  }
 }

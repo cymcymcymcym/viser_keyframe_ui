@@ -1,6 +1,7 @@
 import { ViewerContext } from "../ViewerContext";
 import { useThrottledMessageSender } from "../WebsocketUtils";
 import { GuiComponentContext } from "./GuiComponentContext";
+import { shallowObjectKeysEqual } from "../utils/shallowObjectKeysEqual";
 
 import { Box } from "@mantine/core";
 import React from "react";
@@ -25,6 +26,7 @@ import UploadButtonComponent from "../components/UploadButton";
 import ProgressBarComponent from "../components/ProgressBar";
 import ImageComponent from "../components/Image";
 import HtmlComponent from "../components/Html";
+import ColumnsComponent from "../components/Columns";
 
 /** Root of generated inputs. */
 export default function GeneratedGuiContainer({
@@ -78,6 +80,7 @@ function GuiContainer({ containerUuid }: { containerUuid: string }) {
   }
   const guiIdSet = viewer.useGui(
     (state) => state.guiUuidSetFromContainerUuid[containerUuid],
+    shallowObjectKeysEqual,
   )!;
 
   // Render each GUI element in this container.
@@ -121,6 +124,8 @@ function GeneratedInput(props: {
       return <FolderComponent {...conf} nextGuiUuid={props.nextGuiUuid} />;
     case "GuiTabGroupMessage":
       return <TabGroupComponent {...conf} />;
+    case "GuiColumnsMessage":
+      return <ColumnsComponent {...conf} />;
     case "GuiMarkdownMessage":
       return <MarkdownComponent {...conf} />;
     case "GuiHtmlMessage":

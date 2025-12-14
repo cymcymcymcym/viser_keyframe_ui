@@ -40,6 +40,18 @@ LiteralColor = Literal[
 
 TagLiteral = Literal["GuiComponentMessage", "SceneNodeMessage"]
 
+LabelAnchor = Literal[
+    "top-left",
+    "top-center",
+    "top-right",
+    "center-left",
+    "center-center",
+    "center-right",
+    "bottom-left",
+    "bottom-center",
+    "bottom-right",
+]
+
 
 class Message(infra.Message):
     _tags: ClassVar[Tuple[TagLiteral, ...]] = tuple()
@@ -381,6 +393,41 @@ class LabelMessage(_CreateSceneNodeMessage):
 class LabelProps:
     text: str
     """Text content of the label."""
+    font_size_mode: Literal["screen", "scene"]
+    """Font size mode: 'screen' for screen-space sizing, 'scene' for world-space sizing."""
+    font_screen_scale: float
+    """Scale factor for screen-space font size. Only used when font_size_mode='screen'."""
+    font_scene_height: float
+    """Font height in scene units. Only used when font_size_mode='scene'."""
+    depth_test: bool
+    """Whether to enable depth testing for the label."""
+    anchor: LabelAnchor
+    """Anchor position of the label relative to its position."""
+
+
+@dataclasses.dataclass
+class BatchedLabelsMessage(_CreateSceneNodeMessage):
+    """Add batched 2D labels to the scene."""
+
+    props: BatchedLabelsProps
+
+
+@dataclasses.dataclass
+class BatchedLabelsProps:
+    batched_texts: Tuple[str, ...]
+    """Tuple of text strings for each label."""
+    batched_positions: npt.NDArray[np.float32]
+    """Positions for each label. Shape should be (N, 3)."""
+    font_size_mode: Literal["screen", "scene"]
+    """Font size mode: 'screen' for screen-space sizing, 'scene' for world-space sizing."""
+    font_screen_scale: float
+    """Scale factor for screen-space font size. Only used when font_size_mode='screen'."""
+    font_scene_height: float
+    """Font height in scene units. Only used when font_size_mode='scene'."""
+    depth_test: bool
+    """Whether to enable depth testing for the labels."""
+    anchor: LabelAnchor
+    """Anchor position of the labels relative to their positions."""
 
 
 @dataclasses.dataclass
@@ -1245,6 +1292,24 @@ class GuiTabGroupProps:
 class GuiTabGroupMessage(_CreateGuiComponentMessage):
     container_uuid: str
     props: GuiTabGroupProps
+
+
+@dataclasses.dataclass
+class GuiColumnsProps:
+    order: float
+    """Order value for arranging GUI elements. """
+    visible: bool
+    """Visibility state of the columns group."""
+    column_widths: Optional[Tuple[float, ...]]
+    """Optional fractional widths for each column."""
+    _column_container_ids: Tuple[str, ...]
+    """(Private) Tuple of container IDs for each column."""
+
+
+@dataclasses.dataclass
+class GuiColumnsMessage(_CreateGuiComponentMessage):
+    container_uuid: str
+    props: GuiColumnsProps
 
 
 @dataclasses.dataclass
