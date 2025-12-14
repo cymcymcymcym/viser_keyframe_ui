@@ -62,6 +62,7 @@ import {
   MIN_CANVAS_RATIO,
   DEFAULT_JOINT_COLUMN_COUNT,
 } from "./layoutConstants";
+import { BatchedLabelManager } from "./BatchedLabelManager";
 
 const DEFAULT_ROOT_SCALE = 1;
 
@@ -731,7 +732,9 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
         <SplatRenderContext>
           <AdaptiveDpr />
           {children}
-          <SceneNodeThreeObject name="" />
+          <BatchedLabelManager>
+            <SceneNodeThreeObject name="" />
+          </BatchedLabelManager>
         </SplatRenderContext>
         <DefaultLights />
       </>

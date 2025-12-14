@@ -38,7 +38,6 @@ import {
   CoordinateFrame,
   InstancedAxes,
   PointCloud,
-  ViserBatchedLabels,
   ViserImage,
   ViserLabel,
 } from "./ThreeAssets";
@@ -57,7 +56,6 @@ import { SkinnedMesh } from "./mesh/SkinnedMesh";
 import { BatchedMesh } from "./mesh/BatchedMesh";
 import { SingleGlbAsset } from "./mesh/SingleGlbAsset";
 import { BatchedGlbAsset } from "./mesh/BatchedGlbAsset";
-import { BatchedLabelManager } from "./BatchedLabelManager";
 
 function rgbToInt(rgb: [number, number, number]): number {
   return (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
@@ -195,13 +193,20 @@ function createObjectFactory(
 
       let shadowPlane;
       if (message.props.shadow_opacity > 0.0) {
+        // Use very large dimensions for infinite grids to ensure shadows are visible.
+        const shadowWidth = message.props.infinite_grid
+          ? 10000
+          : message.props.width;
+        const shadowHeight = message.props.infinite_grid
+          ? 10000
+          : message.props.height;
         shadowPlane = (
           <mesh
             receiveShadow
             position={[0.0, 0.0, -0.01]}
             quaternion={planeQuaternion}
           >
-            <planeGeometry args={[message.props.width, message.props.height]} />
+            <planeGeometry args={[shadowWidth, shadowHeight]} />
             <shadowMaterial
               opacity={message.props.shadow_opacity}
               color={0x000000}
@@ -395,16 +400,6 @@ function createObjectFactory(
           <ViserLabel ref={ref} {...message}>
             {children}
           </ViserLabel>
-        ),
-        unmountWhenInvisible: false,
-      };
-    }
-    case "BatchedLabelsMessage": {
-      return {
-        makeObject: (ref, children) => (
-          <ViserBatchedLabels ref={ref} {...message}>
-            {children}
-          </ViserBatchedLabels>
         ),
         unmountWhenInvisible: false,
       };
@@ -962,7 +957,7 @@ function SceneNodeChildren(props: { name: string }) {
     (state) => state[props.name]?.children,
     shallowArrayEqual,
   );
-  const children = (
+  return (
     <>
       {childrenNames &&
         childrenNames.map((child_id) => (
@@ -971,12 +966,4 @@ function SceneNodeChildren(props: { name: string }) {
       <SceneNodeLabel name={props.name} />
     </>
   );
-  if (props.name == "") {
-    // Create a context for batched text rendering at the root level. We place
-    // this here instead of outside of the root node to make sure the root node
-    // rotation (eg, from `set_up_direction()`) is applied to text objects.
-    return <BatchedLabelManager>{children}</BatchedLabelManager>;
-  } else {
-    return children;
-  }
 }
