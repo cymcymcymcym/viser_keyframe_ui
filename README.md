@@ -1,50 +1,88 @@
-<h1 align="left">
-    <img alt="viser logo" src="https://viser.studio/main/_static/logo.svg" width="30" height="auto" />
-    Viser
-    <img alt="viser logo" src="https://viser.studio/main/_static/logo.svg" width="30" height="auto" />
-</h1>
+# viser-keyframe
 
-<p align="left">
-    <img alt="pyright" src="https://github.com/nerfstudio-project/viser/actions/workflows/pyright.yml/badge.svg" />
-    <img alt="typescript-compile" src="https://github.com/nerfstudio-project/viser/actions/workflows/typescript-compile.yml/badge.svg" />
-    <a href="https://pypi.org/project/viser/">
-        <img alt="codecov" src="https://img.shields.io/pypi/pyversions/viser" />
-    </a>
-    <a href="https://discord.gg/pnNTkHNUwP">
-        <img alt="Viser Discord"  src="https://img.shields.io/discord/1423204924518432809?logo=discord&label=discord" />
-    </a>
-</p>
+[![PyPI version](https://img.shields.io/pypi/v/viser-keyframe.svg)](https://pypi.org/project/viser-keyframe/)
+[![Python versions](https://img.shields.io/pypi/pyversions/viser-keyframe.svg)](https://pypi.org/project/viser-keyframe/)
 
-Viser is a 3D visualization library for computer vision and robotics in Python.
+A fork of [viser](https://github.com/nerfstudio-project/viser) with additional features for building keyframe editors and multi-column GUI layouts.
 
-Features include:
+## What's New in viser-keyframe
 
-- API for visualizing 3D primitives.
-- GUI building blocks: buttons, checkboxes, text inputs, sliders, etc.
-- Scene interaction tools (clicks, selection, transform gizmos).
-- Programmatic camera control and rendering.
-- An entirely web-based client, for easy use over SSH!
+This fork adds the following features on top of the original viser:
 
-The goal is to provide primitives that are (1) easy for simple visualization tasks, but (2) can be composed into more elaborate interfaces. For more about design goals, see the [technical report](https://arxiv.org/abs/2507.22885).
+### 1. Multi-Column GUI Layouts
 
-Examples and documentation: https://viser.studio
+Create side-by-side control panels with `gui.add_columns()`:
+
+```python
+import viser
+
+server = viser.ViserServer()
+
+# Create a 3-column layout
+columns = server.gui.add_columns(3)
+
+# Add controls to each column
+with columns.column(0):
+    server.gui.add_slider("Left Arm", 0, 1, 0.5)
+    
+with columns.column(1):
+    server.gui.add_button("Center")
+    
+with columns.column(2):
+    server.gui.add_slider("Right Arm", 0, 1, 0.5)
+```
+
+You can also specify custom column widths:
+
+```python
+columns = server.gui.add_columns(3, widths=[0.3, 0.4, 0.3])
+```
+
+### 2. Slider Precision Fix
+
+Fixes floating-point display noise in sliders (e.g., `0.30000000001` → `0.3`), with improved input validation and dynamic width for high-precision values.
 
 ## Installation
 
-You can install `viser` with `pip`:
-
 ```bash
-pip install viser            # Core dependencies only.
-pip install viser[examples]  # To include example dependencies.
+pip install viser-keyframe
 ```
 
-That's it! To learn more, we recommend looking at the examples in the [documentation](https://viser.studio/).
+## Usage
 
-## Citation
+This package is a drop-in replacement for viser. Just install it and import as usual:
 
-To cite Viser in your work, you can use the BibTeX for our [technical report](https://arxiv.org/abs/2507.22885):
+```python
+import viser
 
+server = viser.ViserServer()
+
+# All original viser features work
+server.scene.add_frame("/world")
+
+# Plus the new multi-column layout
+columns = server.gui.add_columns(2)
 ```
+
+## Original Viser Features
+
+All features from the original viser are included:
+
+- API for visualizing 3D primitives
+- GUI building blocks: buttons, checkboxes, text inputs, sliders, etc.
+- Scene interaction tools (clicks, selection, transform gizmos)
+- Programmatic camera control and rendering
+- Web-based client for easy use over SSH
+
+For full documentation, see the original viser docs: https://viser.studio
+
+## Credits
+
+This package is a fork of [viser](https://github.com/nerfstudio-project/viser) by the Nerfstudio team.
+
+To cite the original viser project:
+
+```bibtex
 @misc{yi2025viser,
       title={Viser: Imperative, Web-based 3D Visualization in Python},
       author={Brent Yi and Chung Min Kim and Justin Kerr and Gina Wu and Rebecca Feng and Anthony Zhang and Jonas Kulhanek and Hongsuk Choi and Yi Ma and Matthew Tancik and Angjoo Kanazawa},
@@ -56,21 +94,6 @@ To cite Viser in your work, you can use the BibTeX for our [technical report](ht
 }
 ```
 
-## Acknowledgements
+## License
 
-`viser` is heavily inspired by packages like
-[Pangolin](https://github.com/stevenlovegrove/Pangolin),
-[Dear ImGui](https://github.com/ocornut/imgui),
-[rviz](https://wiki.ros.org/rviz/),
-[meshcat](https://github.com/rdeits/meshcat), and
-[Gradio](https://github.com/gradio-app/gradio).
-
-The web client is implemented using [React](https://react.dev/), with:
-
-- [Vite](https://vitejs.dev/) / [Rollup](https://rollupjs.org/) for bundling
-- [three.js](https://threejs.org/) via [react-three-fiber](https://github.com/pmndrs/react-three-fiber) and [drei](https://github.com/pmndrs/drei)
-- [Mantine](https://mantine.dev/) for UI components
-- [zustand](https://github.com/pmndrs/zustand) for state management
-- [vanilla-extract](https://vanilla-extract.style/) for stylesheets
-
-Thanks to the authors of these projects for open-sourcing their work!
+MIT License (same as original viser)

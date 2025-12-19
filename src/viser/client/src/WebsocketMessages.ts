@@ -1553,7 +1553,6 @@ export type Message =
   | BatchedAxesMessage
   | GridMessage
   | LabelMessage
-  | BatchedLabelsMessage
   | Gui3DMessage
   | PointCloudMessage
   | DirectionalLightMessage
@@ -1646,7 +1645,6 @@ export type SceneNodeMessage =
   | BatchedAxesMessage
   | GridMessage
   | LabelMessage
-  | BatchedLabelsMessage
   | Gui3DMessage
   | PointCloudMessage
   | DirectionalLightMessage

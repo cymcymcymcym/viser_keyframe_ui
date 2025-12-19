@@ -17,9 +17,9 @@ only-include = ["src/viser"]
 packages = ["src/viser"]
 
 [project]
-name = "viser"
+name = "viser-keyframe"
 dynamic = ["version"]
-description = "3D visualization + Python"
+description = "3D visualization + Python, with multi-column GUI layouts for keyframe editors"
 readme = "README.md"
 license = { text="MIT" }
 requires-python = ">=3.8"
@@ -72,7 +72,7 @@ examples = [
 ]
 
 [project.urls]
-"GitHub" = "https://github.com/nerfstudio-project/viser"
+"GitHub" = "https://github.com/cymcymcymcym/viser_keyframe_ui"
 
 [project.scripts]
 viser-build-client = "viser._client_autobuild:build_client_entrypoint"
