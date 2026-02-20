@@ -43,13 +43,20 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
   }
 
   const columnCount = columnIds.length;
+  const isCompactColumns = columnCount <= 2;
+  const COMPACT_MIN_WIDTH_PX = 120;
+  const COMPACT_DEFAULT_WIDTH_PX = 180;
   const jointColumnCount = Math.max(columnCount - 1, 0);
   const totalGapWidth = COLUMN_GAP_PX * Math.max(columnIds.length - 1, 0);
-  const firstColumnMinWidthPx =
-    DEFAULT_FIRST_COLUMN_WIDTH_PX * FIRST_COLUMN_MIN_RATIO;
+  const firstColumnMinWidthPx = isCompactColumns
+    ? COMPACT_MIN_WIDTH_PX
+    : DEFAULT_FIRST_COLUMN_WIDTH_PX * FIRST_COLUMN_MIN_RATIO;
+  const jointColumnMinWidthPx = isCompactColumns
+    ? COMPACT_MIN_WIDTH_PX
+    : JOINT_COLUMN_MIN_WIDTH_PX;
   const minPanelWidthPx =
     (columnCount > 0 ? firstColumnMinWidthPx : 0) +
-    jointColumnCount * JOINT_COLUMN_MIN_WIDTH_PX +
+    jointColumnCount * jointColumnMinWidthPx +
     totalGapWidth;
   const COLLAPSE_TOLERANCE_PX = 6;
   const shouldCollapse =
@@ -74,10 +81,15 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
     }
 
     const widths = new Array<number>(count);
-    let firstWidth = DEFAULT_FIRST_COLUMN_WIDTH_PX;
-    const jointWidths = Array.from(
+    let firstWidth = isCompactColumns
+      ? COMPACT_DEFAULT_WIDTH_PX
+      : DEFAULT_FIRST_COLUMN_WIDTH_PX;
+    const jointWidths: number[] = Array.from(
       { length: jointCount },
-      () => DEFAULT_JOINT_COLUMN_WIDTH_PX,
+      () =>
+        isCompactColumns
+          ? COMPACT_DEFAULT_WIDTH_PX
+          : DEFAULT_JOINT_COLUMN_WIDTH_PX,
     );
     const baseTotal =
       firstWidth + jointWidths.reduce((acc, width) => acc + width, 0);
@@ -87,15 +99,19 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
     }
 
     if (widthBudget >= baseTotal) {
-      const scale = widthBudget / baseTotal;
-      firstWidth *= scale;
-      for (let idx = 0; idx < jointWidths.length; idx += 1) {
-        jointWidths[idx] *= scale;
+      // Keep compact 2-column rows (e.g. settings pairs) tight instead of
+      // stretching each column to fill the entire row width.
+      if (!isCompactColumns) {
+        const scale = widthBudget / baseTotal;
+        firstWidth *= scale;
+        for (let idx = 0; idx < jointWidths.length; idx += 1) {
+          jointWidths[idx] *= scale;
+        }
       }
     } else {
       let deficit = baseTotal - widthBudget;
       const jointMins = jointWidths.map((width) =>
-        Math.min(width, JOINT_COLUMN_MIN_WIDTH_PX),
+        Math.min(width, jointColumnMinWidthPx),
       );
       if (deficit > 0 && jointCount > 0) {
         const jointCapacity = jointWidths.reduce(
@@ -127,7 +143,7 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
       }
 
       if (deficit > 0) {
-        const firstMinWidth = firstWidth * FIRST_COLUMN_MIN_RATIO;
+        const firstMinWidth = firstColumnMinWidthPx;
         const firstShrink = Math.min(
           deficit,
           Math.max(firstWidth - firstMinWidth, 0),
@@ -204,7 +220,7 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
         >
           {columnIds.map((containerId, idx) => {
             const minWidth =
-              idx === 0 ? firstColumnMinWidthPx : JOINT_COLUMN_MIN_WIDTH_PX;
+              idx === 0 ? firstColumnMinWidthPx : jointColumnMinWidthPx;
             const fixedWidth = fixedWidths?.[idx];
 
             const style = fixedWidth
@@ -231,4 +247,3 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
     </Box>
   );
 }
-

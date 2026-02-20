@@ -1,5 +1,4 @@
 import * as React from "react";
-import { ViserInputComponent } from "./common";
 import { GuiComponentContext } from "../ControlPanel/GuiComponentContext";
 import { GuiCheckboxMessage } from "../WebsocketMessages";
 import { Box, Checkbox, Tooltip } from "@mantine/core";
@@ -14,8 +13,17 @@ export default function CheckboxComponent({
   let input = (
     <Checkbox
       id={uuid}
+      label={label}
       checked={value}
       size="xs"
+      styles={{
+        root: { width: "100%" },
+        label: {
+          whiteSpace: "nowrap",
+          lineHeight: "1.375em",
+          letterSpacing: "-0.75px",
+        },
+      }}
       onChange={(value) => {
         setValue(uuid, value.target.checked);
       }}
@@ -41,6 +49,8 @@ export default function CheckboxComponent({
     );
   }
   return (
-    <ViserInputComponent {...{ uuid, label }}>{input}</ViserInputComponent>
+    <Box pb="0.5em" px="xs">
+      {input}
+    </Box>
   );
 }

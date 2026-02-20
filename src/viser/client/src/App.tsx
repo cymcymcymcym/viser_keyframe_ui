@@ -624,6 +624,62 @@ function ViewerCanvas({ children }: { children: React.ReactNode }) {
     };
   }, [containerElement]);
 
+  useEffect(() => {
+    function isTextInputTarget(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) {
+        return false;
+      }
+      const tagName = target.tagName;
+      return (
+        target.isContentEditable ||
+        tagName === "INPUT" ||
+        tagName === "TEXTAREA" ||
+        tagName === "SELECT"
+      );
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isTextInputTarget(event.target)) {
+        return;
+      }
+      viewer.mutable.current.sendMessage({
+        type: "ViewerKeyMessage",
+        event_type: "keydown",
+        key: event.key,
+        code: event.code,
+        repeat: event.repeat,
+        alt_key: event.altKey,
+        ctrl_key: event.ctrlKey,
+        meta_key: event.metaKey,
+        shift_key: event.shiftKey,
+      });
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (isTextInputTarget(event.target)) {
+        return;
+      }
+      viewer.mutable.current.sendMessage({
+        type: "ViewerKeyMessage",
+        event_type: "keyup",
+        key: event.key,
+        code: event.code,
+        repeat: false,
+        alt_key: event.altKey,
+        ctrl_key: event.ctrlKey,
+        meta_key: event.metaKey,
+        shift_key: event.shiftKey,
+      });
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [viewer]);
+
   // Handle pointer down event. I don't think we need useCallback here, since
   // remounts should be very rare.
   const handlePointerDown = (e: React.PointerEvent) => {

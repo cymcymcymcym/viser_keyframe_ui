@@ -4,7 +4,7 @@ export const CANVAS_MIN_SHRINK_RATIO =
   MIN_CANVAS_RATIO / DEFAULT_CANVAS_RATIO; // Allow canvas to shrink to 20% of screen.
 export const DEFAULT_PANEL_RATIO = 1 - DEFAULT_CANVAS_RATIO;
 
-export const DEFAULT_FIRST_COLUMN_WIDTH_PX = 360;
+export const DEFAULT_FIRST_COLUMN_WIDTH_PX = 260;
 export const DEFAULT_JOINT_COLUMN_WIDTH_PX = 260;
 export const FIRST_COLUMN_MIN_RATIO = 0.9; // First column may shrink to 90% of default.
 export const JOINT_COLUMN_MIN_WIDTH_PX = 250; // Prevent joint slider labels from colliding.
@@ -32,4 +32,3 @@ export function basePanelWidthWithGaps(columnCount: number): number {
   const gapWidth = COLUMN_GAP_PX * Math.max(columnCount - 1, 0);
   return basePanelWidthWithoutGaps(columnCount) + gapWidth;
 }
-

@@ -90,7 +90,10 @@ export default function ControlPanel({
     let maxRatioSum = 0;
     let maxMinWidthPx = 0;
     for (const config of Object.values(state.guiConfigFromUuid)) {
-      if (config?.type === "GuiColumnsMessage") {
+      if (
+        config?.type === "GuiColumnsMessage" &&
+        config.container_uuid === ROOT_CONTAINER_ID
+      ) {
         const columnCount = config.props._column_container_ids.length;
         const ratiosRaw =
           config.props.column_widths && config.props.column_widths.length === columnCount

@@ -198,6 +198,23 @@ class ViewerCameraMessage(Message):
     up_direction: Tuple[float, float, float]
 
 
+ViewerKeyEventType = Literal["keydown", "keyup"]
+
+
+@dataclasses.dataclass
+class ViewerKeyMessage(Message):
+    """Message for keyboard events emitted by the viewer."""
+
+    event_type: ViewerKeyEventType
+    key: str
+    code: str
+    repeat: bool
+    alt_key: bool
+    ctrl_key: bool
+    meta_key: bool
+    shift_key: bool
+
+
 # The list of scene pointer events supported by the viser frontend.
 ScenePointerEventType = Literal["click", "rect-select"]
 

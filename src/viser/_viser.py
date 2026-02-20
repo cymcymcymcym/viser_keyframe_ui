@@ -47,6 +47,32 @@ class _CameraHandleState:
     camera_cb: list[Callable[[CameraHandle], None | Coroutine]]
 
 
+@dataclasses.dataclass(frozen=True)
+class ViewerKeyEvent:
+    """Keyboard event emitted from the viewer."""
+
+    client: ClientHandle
+    """Client that triggered this event."""
+    client_id: int
+    """ID of client that triggered this event."""
+    event_type: _messages.ViewerKeyEventType
+    """Type of key event."""
+    key: str
+    """KeyboardEvent.key value."""
+    code: str
+    """KeyboardEvent.code value."""
+    repeat: bool
+    """Whether this event is an auto-repeat keydown."""
+    alt_key: bool
+    """Whether Alt was pressed."""
+    ctrl_key: bool
+    """Whether Ctrl was pressed."""
+    meta_key: bool
+    """Whether Meta was pressed."""
+    shift_key: bool
+    """Whether Shift was pressed."""
+
+
 class CameraHandle:
     """A handle for reading and writing the camera state of a particular
     client. Typically accessed via :attr:`ClientHandle.camera`."""
@@ -341,6 +367,7 @@ class ClientHandle(DeprecatedAttributeShim if not TYPE_CHECKING else object):
         """Unique ID for this client."""
         self.camera: CameraHandle = CameraHandle(self)
         """Handle for reading from and manipulating the client's viewport camera."""
+        self._key_event_cb: list[Callable[[ViewerKeyEvent], None | Coroutine]] = []
 
     def flush(self) -> None:
         """Flush the outgoing message buffer. Any buffered messages will immediately be
@@ -359,6 +386,13 @@ class ClientHandle(DeprecatedAttributeShim if not TYPE_CHECKING else object):
             Context manager.
         """
         return self._websock_connection.atomic()
+
+    def on_key_event(
+        self, callback: Callable[[ViewerKeyEvent], NoneOrCoroutine]
+    ) -> Callable[[ViewerKeyEvent], NoneOrCoroutine]:
+        """Attach a callback for keyboard events from this client."""
+        self._key_event_cb.append(callback)
+        return callback
 
     def send_file_download(
         self,
@@ -646,6 +680,7 @@ class ViserServer(DeprecatedAttributeShim if not TYPE_CHECKING else object):
         self._client_disconnect_cb: list[
             Callable[[ClientHandle], None | Coroutine]
         ] = []
+        self._key_event_cb: list[Callable[[ViewerKeyEvent], None | Coroutine]] = []
 
         self._thread_executor = ThreadPoolExecutor(max_workers=32)
 
@@ -705,7 +740,41 @@ class ViserServer(DeprecatedAttributeShim if not TYPE_CHECKING else object):
                             camera_cb, client.camera
                         ).add_done_callback(print_threadpool_errors)
 
+            async def handle_key_message(
+                client_id: infra.ClientId, message: _messages.ViewerKeyMessage
+            ) -> None:
+                assert client_id == client.client_id
+                event = ViewerKeyEvent(
+                    client=client,
+                    client_id=client_id,
+                    event_type=message.event_type,
+                    key=message.key,
+                    code=message.code,
+                    repeat=message.repeat,
+                    alt_key=message.alt_key,
+                    ctrl_key=message.ctrl_key,
+                    meta_key=message.meta_key,
+                    shift_key=message.shift_key,
+                )
+
+                for key_cb in client._key_event_cb:
+                    if asyncio.iscoroutinefunction(key_cb):
+                        await key_cb(event)
+                    else:
+                        self._thread_executor.submit(
+                            key_cb, event
+                        ).add_done_callback(print_threadpool_errors)
+
+                for key_cb in self._key_event_cb:
+                    if asyncio.iscoroutinefunction(key_cb):
+                        await key_cb(event)
+                    else:
+                        self._thread_executor.submit(
+                            key_cb, event
+                        ).add_done_callback(print_threadpool_errors)
+
             conn.register_handler(_messages.ViewerCameraMessage, handle_camera_message)
+            conn.register_handler(_messages.ViewerKeyMessage, handle_key_message)
 
         # Remove clients when they disconnect.
         @server.on_client_disconnect
@@ -1005,6 +1074,13 @@ class ViserServer(DeprecatedAttributeShim if not TYPE_CHECKING else object):
         Using async functions can be useful for reducing race conditions.
         """
         self._client_disconnect_cb.append(cb)
+        return cb
+
+    def on_key_event(
+        self, cb: Callable[[ViewerKeyEvent], NoneOrCoroutine]
+    ) -> Callable[[ViewerKeyEvent], NoneOrCoroutine]:
+        """Attach a callback for keyboard events from any connected client."""
+        self._key_event_cb.append(cb)
         return cb
 
     def flush(self) -> None:
