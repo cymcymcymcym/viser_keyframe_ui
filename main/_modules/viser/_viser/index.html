@@ -466,6 +466,32 @@
     <span class="n">camera_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">CameraHandle</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span>
 
 
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ViewerKeyEvent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keyboard event emitted from the viewer.&quot;&quot;&quot;</span>
+
+    <span class="n">client</span><span class="p">:</span> <span class="n">ClientHandle</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Client that triggered this event.&quot;&quot;&quot;</span>
+    <span class="n">client_id</span><span class="p">:</span> <span class="nb">int</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ID of client that triggered this event.&quot;&quot;&quot;</span>
+    <span class="n">event_type</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">ViewerKeyEventType</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Type of key event.&quot;&quot;&quot;</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;KeyboardEvent.key value.&quot;&quot;&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;KeyboardEvent.code value.&quot;&quot;&quot;</span>
+    <span class="n">repeat</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether this event is an auto-repeat keydown.&quot;&quot;&quot;</span>
+    <span class="n">alt_key</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether Alt was pressed.&quot;&quot;&quot;</span>
+    <span class="n">ctrl_key</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether Ctrl was pressed.&quot;&quot;&quot;</span>
+    <span class="n">meta_key</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether Meta was pressed.&quot;&quot;&quot;</span>
+    <span class="n">shift_key</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether Shift was pressed.&quot;&quot;&quot;</span>
+
+
 <div class="viewcode-block" id="CameraHandle">
 <a class="viewcode-back" href="../../../api/handles/camera_handles/#viser.CameraHandle">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CameraHandle</span><span class="p">:</span>
@@ -771,6 +797,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Unique ID for this client.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="p">:</span> <span class="n">CameraHandle</span> <span class="o">=</span> <span class="n">CameraHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle for reading from and manipulating the client&#39;s viewport camera.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_key_event_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ViewerKeyEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
 <div class="viewcode-block" id="ClientHandle.flush">
 <a class="viewcode-back" href="../../../api/handles/client_handles/#viser.ClientHandle.flush">[docs]</a>
@@ -794,6 +821,16 @@
 <span class="sd">            Context manager.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_websock_connection</span><span class="o">.</span><span class="n">atomic</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ClientHandle.on_key_event">
+<a class="viewcode-back" href="../../../api/handles/client_handles/#viser.ClientHandle.on_key_event">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_key_event</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ViewerKeyEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ViewerKeyEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach a callback for keyboard events from this client.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_key_event_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">callback</span></div>
 
 
 <div class="viewcode-block" id="ClientHandle.send_file_download">
@@ -1094,6 +1131,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_client_disconnect_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span>
             <span class="n">Callable</span><span class="p">[[</span><span class="n">ClientHandle</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_key_event_cb</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">ViewerKeyEvent</span><span class="p">],</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Coroutine</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span> <span class="o">=</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
 
@@ -1153,7 +1191,41 @@
                             <span class="n">camera_cb</span><span class="p">,</span> <span class="n">client</span><span class="o">.</span><span class="n">camera</span>
                         <span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">print_threadpool_errors</span><span class="p">)</span>
 
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_key_message</span><span class="p">(</span>
+                <span class="n">client_id</span><span class="p">:</span> <span class="n">infra</span><span class="o">.</span><span class="n">ClientId</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">_messages</span><span class="o">.</span><span class="n">ViewerKeyMessage</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">client_id</span> <span class="o">==</span> <span class="n">client</span><span class="o">.</span><span class="n">client_id</span>
+                <span class="n">event</span> <span class="o">=</span> <span class="n">ViewerKeyEvent</span><span class="p">(</span>
+                    <span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">,</span>
+                    <span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">,</span>
+                    <span class="n">event_type</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">event_type</span><span class="p">,</span>
+                    <span class="n">key</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
+                    <span class="n">code</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">code</span><span class="p">,</span>
+                    <span class="n">repeat</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">repeat</span><span class="p">,</span>
+                    <span class="n">alt_key</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">alt_key</span><span class="p">,</span>
+                    <span class="n">ctrl_key</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">ctrl_key</span><span class="p">,</span>
+                    <span class="n">meta_key</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">meta_key</span><span class="p">,</span>
+                    <span class="n">shift_key</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">shift_key</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">key_cb</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">_key_event_cb</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="n">key_cb</span><span class="p">):</span>
+                        <span class="k">await</span> <span class="n">key_cb</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+                            <span class="n">key_cb</span><span class="p">,</span> <span class="n">event</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">print_threadpool_errors</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">key_cb</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key_event_cb</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="n">key_cb</span><span class="p">):</span>
+                        <span class="k">await</span> <span class="n">key_cb</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_thread_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+                            <span class="n">key_cb</span><span class="p">,</span> <span class="n">event</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">print_threadpool_errors</span><span class="p">)</span>
+
             <span class="n">conn</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">_messages</span><span class="o">.</span><span class="n">ViewerCameraMessage</span><span class="p">,</span> <span class="n">handle_camera_message</span><span class="p">)</span>
+            <span class="n">conn</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="n">_messages</span><span class="o">.</span><span class="n">ViewerKeyMessage</span><span class="p">,</span> <span class="n">handle_key_message</span><span class="p">)</span>
 
         <span class="c1"># Remove clients when they disconnect.</span>
         <span class="nd">@server</span><span class="o">.</span><span class="n">on_client_disconnect</span>
@@ -1476,6 +1548,16 @@
 <span class="sd">        Using async functions can be useful for reducing race conditions.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client_disconnect_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cb</span></div>
+
+
+<div class="viewcode-block" id="ViserServer.on_key_event">
+<a class="viewcode-back" href="../../../api/core/server/#viser.ViserServer.on_key_event">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_key_event</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">cb</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ViewerKeyEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ViewerKeyEvent</span><span class="p">],</span> <span class="n">NoneOrCoroutine</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach a callback for keyboard events from any connected client.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_key_event_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cb</span></div>
 
 
