@@ -18,6 +18,7 @@ from typing import (
     Sequence,
     Tuple,
     TypeVar,
+    cast,
 )
 
 import imageio.v3 as iio
@@ -33,8 +34,8 @@ from ._messages import (
     GuiButtonProps,
     GuiCheckboxProps,
     GuiCloseModalMessage,
-    GuiDropdownProps,
     GuiColumnsProps,
+    GuiDropdownProps,
     GuiFolderProps,
     GuiHtmlProps,
     GuiImageProps,
@@ -571,8 +572,10 @@ class GuiTabGroupHandle(_GuiHandle[None], GuiTabGroupProps):
         gui_api = self._impl.gui_api
         gui_api._websock_interface.get_message_buffer().remove_from_buffer(
             # Don't send outdated GUI updates to new clients.
-            lambda message: isinstance(message, GuiUpdateMessage)
-            and message.uuid == self._impl.uuid
+            lambda message: (
+                isinstance(message, GuiUpdateMessage)
+                and message.uuid == self._impl.uuid
+            )
         )
         gui_api._websock_interface.queue_message(GuiRemoveMessage(self._impl.uuid))
         parent = gui_api._container_handle_from_uuid[self._impl.parent_container_id]
@@ -733,15 +736,17 @@ class GuiColumnsHandle(_GuiHandle[None], GuiColumnsProps):
 
     @property
     def widths(self) -> Tuple[float, ...] | None:
-        stored = self._impl.props.column_widths
+        props = cast(GuiColumnsProps, self._impl.props)
+        stored = props.column_widths
         if stored is None:
             return None
         return tuple(stored)
 
     @widths.setter
     def widths(self, widths: Sequence[float] | None) -> None:
+        props = cast(GuiColumnsProps, self._impl.props)
         if widths is None:
-            self._impl.props.column_widths = None
+            props.column_widths = None
             payload: Sequence[float] | None = None
         else:
             widths_tuple = tuple(float(w) for w in widths)
@@ -751,7 +756,7 @@ class GuiColumnsHandle(_GuiHandle[None], GuiColumnsProps):
                 )
             if any(w < 0 for w in widths_tuple):
                 raise ValueError("Column widths must be non-negative.")
-            self._impl.props.column_widths = widths_tuple
+            props.column_widths = widths_tuple
             payload = widths_tuple
         self._impl.gui_api._websock_interface.queue_message(
             GuiUpdateMessage(
@@ -777,14 +782,17 @@ class GuiColumnsHandle(_GuiHandle[None], GuiColumnsProps):
             column.remove()
         gui_api = self._impl.gui_api
         gui_api._websock_interface.get_message_buffer().remove_from_buffer(
-            lambda message: isinstance(message, GuiUpdateMessage)
-            and message.uuid == self._impl.uuid
+            lambda message: (
+                isinstance(message, GuiUpdateMessage)
+                and message.uuid == self._impl.uuid
+            )
         )
         gui_api._websock_interface.queue_message(GuiRemoveMessage(self._impl.uuid))
         parent = gui_api._container_handle_from_uuid[self._impl.parent_container_id]
         parent._children.pop(self._impl.uuid)
         gui_api._container_handle_from_uuid.pop(self._impl.uuid, None)
         self._column_handles = tuple()
+
 
 class GuiFolderHandle(_GuiHandle[None], GuiFolderProps):
     """Use as a context to place GUI elements into a folder."""
@@ -825,8 +833,10 @@ class GuiFolderHandle(_GuiHandle[None], GuiFolderProps):
         gui_api = self._impl.gui_api
         gui_api._websock_interface.get_message_buffer().remove_from_buffer(
             # Don't send outdated GUI updates to new clients.
-            lambda message: isinstance(message, GuiUpdateMessage)
-            and message.uuid == self._impl.uuid
+            lambda message: (
+                isinstance(message, GuiUpdateMessage)
+                and message.uuid == self._impl.uuid
+            )
         )
         gui_api._websock_interface.queue_message(GuiRemoveMessage(self._impl.uuid))
         for child in tuple(self._children.values()):

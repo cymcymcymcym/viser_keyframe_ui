@@ -36,9 +36,13 @@ def main() -> None:
                 )
 
             with server.gui.add_folder("Rotation"):
-                server.gui.add_slider("Pitch", min=-180, max=180, step=1, initial_value=0)
+                server.gui.add_slider(
+                    "Pitch", min=-180, max=180, step=1, initial_value=0
+                )
                 server.gui.add_slider("Yaw", min=-180, max=180, step=1, initial_value=0)
-                server.gui.add_slider("Roll", min=-180, max=180, step=1, initial_value=0)
+                server.gui.add_slider(
+                    "Roll", min=-180, max=180, step=1, initial_value=0
+                )
 
     # Example 2: Scene objects organization in the second column
     with columns[1]:
@@ -60,7 +64,9 @@ def main() -> None:
                     sphere_radius = server.gui.add_slider(
                         "Radius", min=0.1, max=2.0, step=0.1, initial_value=0.5
                     )
-                    sphere_color = server.gui.add_rgb("Color", initial_value=(255, 0, 0))
+                    sphere_color = server.gui.add_rgb(
+                        "Color", initial_value=(255, 0, 0)
+                    )
                     sphere_visible = server.gui.add_checkbox(
                         "Visible", initial_value=True
                     )

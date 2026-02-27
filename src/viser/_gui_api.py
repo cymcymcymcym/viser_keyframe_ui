@@ -632,9 +632,7 @@ class GuiApi:
             normalized_widths = None
         else:
             if len(widths) != num_columns:
-                raise ValueError(
-                    "Length of widths must match the number of columns."
-                )
+                raise ValueError("Length of widths must match the number of columns.")
             widths_tuple = tuple(float(w) for w in widths)
             if any(w < 0 for w in widths_tuple):
                 raise ValueError("Column widths must be non-negative.")

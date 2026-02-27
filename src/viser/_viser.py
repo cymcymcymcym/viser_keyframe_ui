@@ -761,17 +761,17 @@ class ViserServer(DeprecatedAttributeShim if not TYPE_CHECKING else object):
                     if asyncio.iscoroutinefunction(key_cb):
                         await key_cb(event)
                     else:
-                        self._thread_executor.submit(
-                            key_cb, event
-                        ).add_done_callback(print_threadpool_errors)
+                        self._thread_executor.submit(key_cb, event).add_done_callback(
+                            print_threadpool_errors
+                        )
 
                 for key_cb in self._key_event_cb:
                     if asyncio.iscoroutinefunction(key_cb):
                         await key_cb(event)
                     else:
-                        self._thread_executor.submit(
-                            key_cb, event
-                        ).add_done_callback(print_threadpool_errors)
+                        self._thread_executor.submit(key_cb, event).add_done_callback(
+                            print_threadpool_errors
+                        )
 
             conn.register_handler(_messages.ViewerCameraMessage, handle_camera_message)
             conn.register_handler(_messages.ViewerKeyMessage, handle_key_message)
