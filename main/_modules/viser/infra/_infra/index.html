@@ -1053,15 +1053,13 @@
                         <span class="p">),</span>
                         <span class="c1"># Accept connections with version-based protocol and extract version in handler.</span>
                         <span class="n">subprotocols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                        <span class="n">select_subprotocol</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_</span><span class="p">,</span> <span class="n">subprotocols</span><span class="p">:</span> <span class="p">(</span>
-                            <span class="nb">next</span><span class="p">(</span>
-                                <span class="p">(</span>
-                                    <span class="n">Subprotocol</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-                                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">subprotocols</span>
-                                    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;viser-v&quot;</span><span class="p">)</span>
-                                <span class="p">),</span>
-                                <span class="kc">None</span><span class="p">,</span>
-                            <span class="p">)</span>
+                        <span class="n">select_subprotocol</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_</span><span class="p">,</span> <span class="n">subprotocols</span><span class="p">:</span> <span class="nb">next</span><span class="p">(</span>
+                            <span class="p">(</span>
+                                <span class="n">Subprotocol</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">subprotocols</span>
+                                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;viser-v&quot;</span><span class="p">)</span>
+                            <span class="p">),</span>
+                            <span class="kc">None</span><span class="p">,</span>
                         <span class="p">),</span>
                     <span class="p">)</span> <span class="k">as</span> <span class="n">serve_future</span><span class="p">:</span>
                         <span class="k">assert</span> <span class="n">serve_future</span><span class="o">.</span><span class="n">server</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
