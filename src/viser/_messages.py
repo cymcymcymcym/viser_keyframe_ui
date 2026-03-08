@@ -1534,6 +1534,26 @@ class GuiButtonGroupMessage(_CreateGuiComponentMessage):
 
 
 @dataclasses.dataclass
+class GuiListProps(GuiBaseProps):
+    items: Tuple[str, ...]
+    """Ordered list entries shown in the list widget."""
+    allow_rename: bool
+    """Whether users can rename items via double-click inline editing."""
+    allow_reorder: bool
+    """Whether users can reorder items via drag-and-drop."""
+    max_visible_rows: int
+    """Maximum number of visible rows before scrolling."""
+
+
+@dataclasses.dataclass
+class GuiListMessage(_CreateGuiComponentMessage):
+    value: Dict[str, Any]
+    """Event payload and current selected index for list interactions."""
+    container_uuid: str
+    props: GuiListProps
+
+
+@dataclasses.dataclass
 class GuiUpdateMessage(Message):
     """Sent client<->server when any property of a GUI component is changed."""
 

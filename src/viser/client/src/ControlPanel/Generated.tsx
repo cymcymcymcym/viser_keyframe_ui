@@ -27,6 +27,7 @@ import ProgressBarComponent from "../components/ProgressBar";
 import ImageComponent from "../components/Image";
 import HtmlComponent from "../components/Html";
 import ColumnsComponent from "../components/Columns";
+import ListInputComponent from "../components/ListInput";
 
 /** Root of generated inputs. */
 export default function GeneratedGuiContainer({
@@ -162,6 +163,8 @@ function GeneratedInput(props: {
       return <RgbaComponent {...conf} />;
     case "GuiButtonGroupMessage":
       return <ButtonGroupComponent {...conf} />;
+    case "GuiListMessage":
+      return <ListInputComponent {...conf} />;
     case "GuiProgressBarMessage":
       return <ProgressBarComponent {...conf} />;
     default:

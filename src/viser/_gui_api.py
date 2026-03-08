@@ -45,6 +45,7 @@ from ._gui_handles import (
     GuiFolderHandle,
     GuiHtmlHandle,
     GuiImageHandle,
+    GuiListHandle,
     GuiMarkdownHandle,
     GuiModalHandle,
     GuiMultiSliderHandle,
@@ -1219,6 +1220,64 @@ class GuiApi:
                         hint=hint,
                         disabled=disabled,
                         visible=visible,
+                    ),
+                ),
+            )
+        )
+
+    @deprecated_positional_shim
+    def add_list(
+        self,
+        label: str,
+        items: Sequence[str],
+        *,
+        initial_selected_index: int = -1,
+        allow_rename: bool = True,
+        allow_reorder: bool = True,
+        max_visible_rows: int = 8,
+        disabled: bool = False,
+        visible: bool = True,
+        hint: str | None = None,
+        order: float | None = None,
+    ) -> GuiListHandle:
+        """Add an interactive list widget.
+
+        The returned value payload is a dictionary containing interaction events:
+        - ``event``: one of ``"select"``, ``"rename"``, ``"reorder"``
+        - ``selected_index``: currently selected row, ``-1`` if none
+        - ``index`` and ``text`` for rename events
+        - ``src_index`` and ``dst_index`` for reorder events
+        """
+        selected_index = max(-1, int(initial_selected_index))
+        if selected_index >= len(items):
+            selected_index = len(items) - 1
+        payload: dict[str, Any] = {
+            "event": "select",
+            "selected_index": selected_index,
+            "index": selected_index,
+            "text": None,
+            "src_index": None,
+            "dst_index": None,
+        }
+        uuid = _make_uuid()
+        order = _apply_default_order(order)
+        return GuiListHandle(
+            self._create_gui_input(
+                payload,
+                message=_messages.GuiListMessage(
+                    value=payload,
+                    uuid=uuid,
+                    container_uuid=self._get_container_uuid(),
+                    props=_messages.GuiListProps(
+                        order=order,
+                        label=label,
+                        hint=hint,
+                        disabled=disabled,
+                        visible=visible,
+                        items=tuple(str(item) for item in items),
+                        allow_rename=allow_rename,
+                        allow_reorder=allow_reorder,
+                        max_visible_rows=max(1, int(max_visible_rows)),
                     ),
                 ),
             )

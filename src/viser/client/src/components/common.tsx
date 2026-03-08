@@ -31,7 +31,7 @@ export function ViserInputComponent({
       );
   }
 
-  if (label !== undefined)
+  if (label !== undefined && label !== "")
     children = (
       <LabeledInput
         uuid={uuid}

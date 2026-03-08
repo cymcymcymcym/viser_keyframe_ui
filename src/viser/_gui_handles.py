@@ -12,6 +12,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Dict,
     Generic,
     Iterable,
     Literal,
@@ -39,6 +40,7 @@ from ._messages import (
     GuiFolderProps,
     GuiHtmlProps,
     GuiImageProps,
+    GuiListProps,
     GuiMarkdownProps,
     GuiMultiSliderProps,
     GuiNumberProps,
@@ -524,6 +526,42 @@ class GuiDropdownHandle(
         )
         if self.value not in options:
             self.value = options[0]
+
+
+class GuiListHandle(GuiInputHandle[Dict[str, Any]], GuiListProps):
+    """Handle for list-style GUI inputs with selection/reorder/rename events."""
+
+    @property
+    def items(self) -> tuple[str, ...]:  # pyright: ignore[reportIncompatibleVariableOverride]
+        props = cast(GuiListProps, self._impl.props)
+        return props.items
+
+    @items.setter
+    def items(self, items: Iterable[str]) -> None:  # pyright: ignore[reportIncompatibleVariableOverride]
+        props = cast(GuiListProps, self._impl.props)
+        items_tuple = tuple(str(item) for item in items)
+        props.items = items_tuple
+        self._impl.gui_api._websock_interface.queue_message(
+            GuiUpdateMessage(
+                self._impl.uuid,
+                {"items": items_tuple},
+            )
+        )
+
+    @property
+    def selected_index(self) -> int:
+        raw = self.value.get("selected_index", -1)
+        try:
+            return int(raw)
+        except Exception:
+            return -1
+
+    @selected_index.setter
+    def selected_index(self, index: int) -> None:
+        payload = dict(self.value)
+        payload["selected_index"] = int(index)
+        payload["event"] = "select"
+        self.value = payload
 
 
 class GuiTabGroupHandle(_GuiHandle[None], GuiTabGroupProps):
