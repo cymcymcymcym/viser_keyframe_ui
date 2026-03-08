@@ -464,6 +464,7 @@
     <span class="n">GuiFolderHandle</span><span class="p">,</span>
     <span class="n">GuiHtmlHandle</span><span class="p">,</span>
     <span class="n">GuiImageHandle</span><span class="p">,</span>
+    <span class="n">GuiListHandle</span><span class="p">,</span>
     <span class="n">GuiMarkdownHandle</span><span class="p">,</span>
     <span class="n">GuiModalHandle</span><span class="p">,</span>
     <span class="n">GuiMultiSliderHandle</span><span class="p">,</span>
@@ -1687,6 +1688,67 @@
                         <span class="n">hint</span><span class="o">=</span><span class="n">hint</span><span class="p">,</span>
                         <span class="n">disabled</span><span class="o">=</span><span class="n">disabled</span><span class="p">,</span>
                         <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GuiApi.add_list">
+<a class="viewcode-back" href="../../../api/core/gui_api/#viser.GuiApi.add_list">[docs]</a>
+    <span class="nd">@deprecated_positional_shim</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_list</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">items</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">initial_selected_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">allow_rename</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">allow_reorder</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">max_visible_rows</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="n">disabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">hint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GuiListHandle</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add an interactive list widget.</span>
+
+<span class="sd">        The returned value payload is a dictionary containing interaction events:</span>
+<span class="sd">        - ``event``: one of ``&quot;select&quot;``, ``&quot;rename&quot;``, ``&quot;reorder&quot;``</span>
+<span class="sd">        - ``selected_index``: currently selected row, ``-1`` if none</span>
+<span class="sd">        - ``index`` and ``text`` for rename events</span>
+<span class="sd">        - ``src_index`` and ``dst_index`` for reorder events</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">selected_index</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">initial_selected_index</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">selected_index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+            <span class="n">selected_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;select&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;selected_index&quot;</span><span class="p">:</span> <span class="n">selected_index</span><span class="p">,</span>
+            <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">selected_index</span><span class="p">,</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;src_index&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;dst_index&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">uuid</span> <span class="o">=</span> <span class="n">_make_uuid</span><span class="p">()</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">_apply_default_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">GuiListHandle</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_create_gui_input</span><span class="p">(</span>
+                <span class="n">payload</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="n">_messages</span><span class="o">.</span><span class="n">GuiListMessage</span><span class="p">(</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+                    <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span>
+                    <span class="n">container_uuid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_container_uuid</span><span class="p">(),</span>
+                    <span class="n">props</span><span class="o">=</span><span class="n">_messages</span><span class="o">.</span><span class="n">GuiListProps</span><span class="p">(</span>
+                        <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                        <span class="n">hint</span><span class="o">=</span><span class="n">hint</span><span class="p">,</span>
+                        <span class="n">disabled</span><span class="o">=</span><span class="n">disabled</span><span class="p">,</span>
+                        <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">,</span>
+                        <span class="n">items</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">),</span>
+                        <span class="n">allow_rename</span><span class="o">=</span><span class="n">allow_rename</span><span class="p">,</span>
+                        <span class="n">allow_reorder</span><span class="o">=</span><span class="n">allow_reorder</span><span class="p">,</span>
+                        <span class="n">max_visible_rows</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_visible_rows</span><span class="p">)),</span>
                     <span class="p">),</span>
                 <span class="p">),</span>
             <span class="p">)</span>
