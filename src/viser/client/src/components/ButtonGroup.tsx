@@ -23,7 +23,7 @@ export default function ButtonGroupComponent({
                 updates: { value: option },
               })
             }
-            style={{ flexGrow: 1, wuuidth: 0 }}
+            style={{ flex: "1 1 0", minWidth: 0 }}
             disabled={disabled}
             size="compact-xs"
             variant="outline"
