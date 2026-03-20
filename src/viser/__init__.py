@@ -65,4 +65,4 @@ from ._viser import ClientHandle as ClientHandle
 from ._viser import ViewerKeyEvent as ViewerKeyEvent
 from ._viser import ViserServer as ViserServer
 
-__version__ = "1.0.19"
+__version__ = "1.0.20"
