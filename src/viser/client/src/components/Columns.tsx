@@ -44,6 +44,10 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
 
   const columnCount = columnIds.length;
   const isCompactColumns = columnCount <= 2;
+  const hasCompactExplicitWidths =
+    isCompactColumns &&
+    conf.props.column_widths &&
+    conf.props.column_widths.length === columnCount;
   const COMPACT_MIN_WIDTH_PX = 120;
   const COMPACT_DEFAULT_WIDTH_PX = 180;
   const jointColumnCount = Math.max(columnCount - 1, 0);
@@ -96,6 +100,12 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
 
     if (baseTotal <= 0) {
       return null;
+    }
+
+    // For compact rows with explicit widths (for example 2 equal slider columns),
+    // respect the requested ratios and fill the available width evenly.
+    if (hasCompactExplicitWidths) {
+      return normalizedWidths.map((ratio) => Math.max(widthBudget * ratio, 0));
     }
 
     if (widthBudget >= baseTotal) {
@@ -162,7 +172,7 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
 
     const totalWidth = widths.reduce((acc, width) => acc + width, 0);
     const remaining = widthBudget - totalWidth;
-    if (Math.abs(remaining) > 1e-3 && count > 0) {
+    if (Math.abs(remaining) > 1e-3 && count > 0 && !isCompactColumns) {
       widths[count - 1] = Math.max(widths[count - 1] + remaining, 0);
     }
 
@@ -172,6 +182,7 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
     availableWidth,
     columnIds,
     normalizedWidths,
+    hasCompactExplicitWidths,
   ]);
 
   React.useEffect(() => {
@@ -213,6 +224,7 @@ export default function ColumnsComponent(conf: GuiColumnsMessage) {
         <Flex
           gap={`${COLUMN_GAP_PX}px`}
           align="flex-start"
+          justify="flex-start"
           wrap="nowrap"
           style={{
             width: "100%",
